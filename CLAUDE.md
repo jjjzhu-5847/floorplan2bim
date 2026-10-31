@@ -10,7 +10,8 @@ the day-by-day task list with acceptance criteria, and the report and presentati
 - All parameters and assumptions live in `config.py`. Do not hard-code heights, rates, paths or class ids elsewhere.
 - The "raw plan" dict (walls / openings / spaces as shapely polygons in drawing units) is the interface
   between steps; see `vectorization/__init__.py`. Keep it stable.
-- Data, model weights and outputs are not part of the code: `data/`, `models/`, `outputs/`.
+- Only `data/cubicasa5k/` (~5 GB) is kept out of git; each person downloads it. Model weights (`models/`),
+  price data (`data/ppi/`) and results (`outputs/`) are committed so the whole team works from the same files.
 
 ## Rules for experiments
 - Tune vectorization and scale methods on the **validation** split only. Run the **test** split once for the

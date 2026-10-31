@@ -116,9 +116,9 @@ floorplan2bim/
 │   ├── fetch_demo_images.py   重新下载 demo_images
 │   ├── run_pipeline.py        命令行：一张图或一个 SVG → outputs/plans/<name>/
 │   └── build_demo.py          一条命令生成演示页
-├── data/                      （不提交）cubicasa5k/、ppi/
-├── models/                    （不提交）segformer_best.pt
-└── outputs/                   （不提交）plans/、evaluation/、price_forecast/、figures/、web/
+├── data/                      cubicasa5k/（不提交，约 5 GB，各自下载）、ppi/（提交）
+├── models/                    （提交）segformer_best.pt
+└── outputs/                   （提交）plans/、evaluation/、price_forecast/、figures/、web/
 ```
 
 ---
