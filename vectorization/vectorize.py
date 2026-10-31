@@ -63,7 +63,8 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX, room_mode=config.VEC_R
     u = max(mask.shape) / config.SEG_INPUT_SIZE  # pixel parameters below are for a 512-px mask
     door_gap = (door_gap[0] * u, door_gap[1] * u)
     wall = np.isin(mask, [2, 4]).astype(np.uint8)
-    wall = cv2.morphologyEx(wall, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+    k = max(3, int(round(3 * u)) | 1)  # close at the working size: an outlined wall is one wall, not two
+    wall = cv2.morphologyEx(wall, cv2.MORPH_CLOSE, np.ones((k, k), np.uint8))
     dist = cv2.distanceTransform(wall, cv2.DIST_L2, 3)
     skel = skeletonize(wall > 0).astype(np.uint8) * 255
     lines = cv2.HoughLinesP(skel, 1, np.pi / 180, threshold=round(8 * u), minLineLength=6 * u, maxLineGap=3 * u)
@@ -174,7 +175,8 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX, room_mode=config.VEC_R
                 return True
         return False
     for runs, horiz in ((H, True), (V, False)):
-        runs[:] = [r for r in runs if r[2] - r[1] >= 4 * r[3] or connected(r, horiz, 1) or connected(r, horiz, 2)]
+        # a wall free at both ends and shorter than 10 thicknesses is furniture or a fixture, not a wall
+        runs[:] = [r for r in runs if r[2] - r[1] >= 10 * r[3] or connected(r, horiz, 1) or connected(r, horiz, 2)]
     walls = []
     for runs, horiz in ((H, True), (V, False)):
         for c, a, b, t in runs:
@@ -202,10 +204,61 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX, room_mode=config.VEC_R
             raw_open.append(dict(poly=poly, kind="Door"))
         else:
             raw_open.append(dict(poly=o["poly"], kind="Window"))
-    # exterior = walls running along the outline of a built-up region
+    # rooms: everything inside the building outline ("footprint") or room-class pixels, minus walls
     solid = np.isin(mask, [1, 2, 3, 4]).astype(np.uint8)
     cnts, _ = cv2.findContours(solid, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    outlines = [p.exterior for c in cnts if cv2.contourArea(c) > 2000 * u * u
+    cnts = [c for c in cnts if cv2.contourArea(c) > 2000 * u * u]
+    inside = np.zeros_like(mask)
+    cv2.drawContours(inside, cnts, -1, 1, cv2.FILLED)
+    wall_px = np.zeros_like(mask)
+    for W in walls:
+        x0, y0, x1, y1 = [int(round(v)) for v in W["poly"].bounds]
+        wall_px[y0:y1 + 1, x0:x1 + 1] = 1
+    room = ((inside == 1) if room_mode == "footprint" else (mask == 1)) & (wall_px == 0)
+    room = cv2.morphologyEx(room.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    # open spaces (balcony, terrace): a room whose edge meets the outside, not walls, for over a quarter of its
+    # length. They stay in the floor area but leave the building outline, so the wall between a flat and its
+    # balcony counts as exterior (as in the ground truth)
+    spaces, open_px = [], np.zeros_like(mask)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(room, 4)
+    for i in range(1, n):
+        if stats[i][4] < config.VEC_MIN_ROOM_PX * u * u:
+            continue
+        x, y, w, h = stats[i][:4]
+        x0, y0 = max(x - 2, 0), max(y - 2, 0)
+        comp = (lab[y0:y + h + 2, x0:x + w + 2] == i).astype(np.uint8)
+        ring = (cv2.dilate(comp, np.ones((3, 3), np.uint8)) > 0) & (comp == 0)
+        if ring.any() and (ring & (inside[y0:y + h + 2, x0:x + w + 2] == 0)).sum() > 0.25 * ring.sum():
+            open_px[y0:y + h + 2, x0:x + w + 2] |= comp
+        c, _ = cv2.findContours(comp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        c = cv2.approxPolyDP(max(c, key=cv2.contourArea), 2 * u, True) + np.array([x0, y0])
+        if len(c) >= 3:
+            spaces += [dict(poly=p, type="Room") for p in polygon_parts(Polygon(c[:, 0, :]).buffer(0))]
+    closed = (room == 1) & (open_px == 0)
+
+    def sides(W):
+        """Per sample along the wall: is there a closed room / an open space just beyond either face?"""
+        k = max(int((W["b"] - W["a"]) / (2 * u)), 2)
+        s_ = np.linspace(W["a"], W["b"], k)
+        res = []
+        for off in (-1, 1):
+            c_ = W["c"] + off * (W["t"] / 2 + 2 * u)
+            xs, ys = (s_, np.full(k, c_)) if W["horiz"] else (np.full(k, c_), s_)
+            xs = np.clip(np.round(xs).astype(int), 0, mask.shape[1] - 1)
+            ys = np.clip(np.round(ys).astype(int), 0, mask.shape[0] - 1)
+            res.append((closed[ys, xs], open_px[ys, xs] == 1))
+        return res
+    # railings: walls with no closed room on either side and an open space on one side
+    keep = []
+    for W in walls:
+        (c1, o1), (c2, o2) = sides(W)
+        if not (np.mean(c1 | c2) < 0.3 and np.mean(o1 | o2) > 0.3):
+            keep.append(W)
+    walls = keep
+    # exterior = walls running along the outline of the built-up region without its open spaces
+    core = ((inside == 1) & (open_px == 0)).astype(np.uint8)
+    cc, _ = cv2.findContours(core, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    outlines = [p.exterior for c in cc if cv2.contourArea(c) > 2000 * u * u
                 for p in polygon_parts(Polygon(c[:, 0, :]).buffer(0))]
     outline = unary_union(outlines) if outlines else None
 
@@ -214,29 +267,8 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX, room_mode=config.VEC_R
         if outline is None:
             return False
         k = max(int(W["b"] - W["a"]), 2)
-        s = np.linspace(W["a"], W["b"], k)
-        xy = np.c_[s, np.full(k, W["c"])] if W["horiz"] else np.c_[np.full(k, W["c"]), s]
+        s_ = np.linspace(W["a"], W["b"], k)
+        xy = np.c_[s_, np.full(k, W["c"])] if W["horiz"] else np.c_[np.full(k, W["c"]), s_]
         return float(np.mean(shapely.distance(outline, shapely.points(xy)) <= W["t"] / 2 + 3 * u)) >= 0.5
     raw_walls = [dict(poly=W["poly"], external=external(W)) for W in walls]
-    # rooms: room pixels minus walls, split into regions
-    wall_px = np.zeros_like(mask)
-    for W in walls:
-        x0, y0, x1, y1 = [int(round(v)) for v in W["poly"].bounds]
-        wall_px[y0:y1 + 1, x0:x1 + 1] = 1
-    if room_mode == "footprint":  # everything inside the building outline, not only pixels labelled room
-        inside = np.zeros_like(mask)
-        cv2.drawContours(inside, [c for c in cnts if cv2.contourArea(c) > 2000 * u * u], -1, 1, cv2.FILLED)
-        room = ((inside == 1) & (wall_px == 0)).astype(np.uint8)
-    else:
-        room = ((mask == 1) & (wall_px == 0)).astype(np.uint8)
-    room = cv2.morphologyEx(room, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-    spaces = []
-    n, lab, stats, _ = cv2.connectedComponentsWithStats(room, 4)
-    for i in range(1, n):
-        if stats[i][4] < config.VEC_MIN_ROOM_PX * u * u:
-            continue
-        c, _ = cv2.findContours((lab == i).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        c = cv2.approxPolyDP(max(c, key=cv2.contourArea), 2 * u, True)
-        if len(c) >= 3:
-            spaces += [dict(poly=p, type="Room") for p in polygon_parts(Polygon(c[:, 0, :]).buffer(0))]
     return dict(walls=raw_walls, openings=raw_open, spaces=spaces, n_outlines=len(outlines))

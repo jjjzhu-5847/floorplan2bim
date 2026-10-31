@@ -8,7 +8,9 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 CUBICASA_DIR = DATA_DIR / "cubicasa5k"          # unzip the Zenodo archive here
 MODELS_DIR = ROOT / "models"
-SEGFORMER_CKPT = MODELS_DIR / "segformer_best.pt"
+# Recognition model: our fine-tune at the original resolution (recognition/train_segformer.py native-train, task 5.5).
+# The public checkpoint it started from is models/segformer_best.pt.
+SEGFORMER_CKPT = MODELS_DIR / "segformer_native.pt"
 OUTPUTS_DIR = ROOT / "outputs"
 
 # ---------------------------------------------------------------- geometry assumptions
@@ -32,20 +34,18 @@ SCALE_PRIORS = dict(sizes=dict(doors=0.797, ext_walls=0.245, int_walls=0.120, ar
 SCALE_LABEL_MAX_DISAGREEMENT = 0.35  # drop the area-label estimate if it differs from doors/walls by more
 # Effective sizes and weights as our recognition + vectorizer measures them, calibrated on the VALIDATION split
 # (evaluation/calibrate_scale.py). Used for real images (condition E, run_image, live demo).
-# Calibrated 2026-10-31 on single-storey validation plans (outputs/priors/scale_calibration.json, from
-# outputs/evaluation_val_fullres): on the 512-px mask our doors measure ~27% wider and walls ~40% thicker than the
-# ground truth; measured again on the original image they come out close to the true sizes (doors 0.77 m).
-# Chosen fusion: all five + area labels (median scale error on single-storey plans 10.7%;
-# mask doors + walls + labels 11.5%; doors only 13.4%; image size only 17.7%).
-SCALE_CALIBRATED = dict(sizes=dict(doors=1.010, ext_walls=0.352, int_walls=0.199, doors_img=0.770, ext_walls_img=0.260, area_labels=1.026),
-                        weights=dict(doors=55.4, ext_walls=33.4, int_walls=29.5, doors_img=49.0, ext_walls_img=27.0, area_labels=115.7))
+# Calibrated 2026-10-31 on single-storey validation plans for the FINAL system (native-resolution model, current
+# vectorizer; outputs/evaluation_val_final_cal -> outputs/priors/scale_calibration.json). Chosen fusion:
+# mask: all three (median scale error on single-storey plans 7.8%).
+SCALE_CALIBRATED = dict(sizes=dict(doors=0.885, ext_walls=0.290, int_walls=0.172, doors_img=0.740, ext_walls_img=0.250, area_labels=1.095),
+                        weights=dict(doors=122.4, ext_walls=33.6, int_walls=62.5, doors_img=0.0, ext_walls_img=0.0, area_labels=0.0))
 
 # ---------------------------------------------------------------- recognition
 SEG_CLASSES = ["background", "room", "wall", "door", "window"]
 SEG_INPUT_SIZE = 512                       # the public checkpoint was trained on 512 x 512
-SEG_WORK_SIZE = 512                        # plans are letterboxed to this size for recognition (task 2.2);
+SEG_WORK_SIZE = None                       # plans are letterboxed to this size for recognition (task 2.2);
                                            # None = original resolution (needs SEG_TILE and a model trained on it)
-SEG_TILE = None                            # None: one pass; 512: overlapping 512-px tiles at the working size
+SEG_TILE = 512                             # None: one pass; 512: overlapping 512-px tiles at the working size
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
