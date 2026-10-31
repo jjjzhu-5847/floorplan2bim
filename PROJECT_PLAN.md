@@ -4,7 +4,7 @@
 > 最后更新：2026-10-31（在 claude.ai 中完成可行性测试，并把代码整理成本仓库的结构）。
 >
 > **整理后已测试**：合成平面全流程（工程量与造价和参考值完全一致）、IFC 输出（46 个构件全部可三角化）、误差预演、价格回测与开工月份区间（用模拟数据跑通）、网页生成。
-> **整理后尚未运行**（云端环境装 PyTorch 时被中断）：依赖 SegFormer 的路径——`run_pipeline.py --image`、`evaluate_cubicasa.py`、`web/app.py`。这些代码与可行性测试时的版本逻辑相同，但文件拆分后要在任务 0.4 和 1.1 中首次验证，出错先修。冒烟测试可用 `python samples/make_fake_dataset.py` 生成假数据集，再运行 `python evaluation/evaluate_cubicasa.py --root samples/fake_cubicasa --split test`。
+> **2026-10-31 本机验证**：`run_pipeline.py --image` 与 `evaluate_cubicasa.py`（验证集前 10 张，`failed.csv` 为空）已跑通；需 transformers ≥ 5.22（权重使用新版参数命名），并修复了 OpenCV 5 兼容与自相交多边形两处崩溃。`web/app.py` 尚未运行。
 
 ---
 
@@ -96,7 +96,6 @@ floorplan2bim/
 │   ├── quantities.py          算量规则（见文件头注释，报告里照抄规则说明）
 │   └── cost.py                工程量 × 单价
 ├── price_forecast/            ⑥ 价格风险
-│   ├── fetch_ppi.py           从 FRED 下载 7 个月度价格指数 → data/ppi/ppi_monthly.csv
 │   ├── backtest.py            滚动回测：朴素/漂移/ARIMA/ETS，1–12 个月误差
 │   └── cost_by_month.py       ARIMA 中心线 + 历史误差联合重放 → 未来 12 个月造价 P10/P50/P90
 ├── evaluation/                评估与出图
@@ -112,8 +111,6 @@ floorplan2bim/
 │   ├── make_sample_svg.py     生成合成测试平面 samples/sample_plan/model.svg（两室一厅，100 单位=1 m）
 │   └── demo_images/           5 张真实 CubiCasa 平面图（512 px 副本），完整数据到位前用于演示
 ├── scripts/
-│   ├── download_checkpoint.py 下载并校验 SegFormer 权重 → models/segformer_best.pt
-│   ├── fetch_demo_images.py   重新下载 demo_images
 │   ├── run_pipeline.py        命令行：一张图或一个 SVG → outputs/plans/<name>/
 │   └── build_demo.py          一条命令生成演示页
 ├── data/                      cubicasa5k/（不提交，约 5 GB，各自下载）、ppi/（提交）
@@ -149,7 +146,7 @@ floorplan2bim/
 ### 5.2 识别模型（预训练，不训练）
 
 - SegFormer-B0（NVIDIA 2021 提出的 Transformer 语义分割模型），在 CubiCasa5K 上训练，5 类：background / room / wall / door / window。
-- 来源：github.com/alifarzadjamali/floor-plan-document-intelligence（MIT 许可），文件 `results/segmentation/phase2_dev/checkpoints/best.pt`，44.8 MB，sha256 `12fa671d…2bf7`（`scripts/download_checkpoint.py` 自动下载并校验）。
+- 来源：github.com/alifarzadjamali/floor-plan-document-intelligence（MIT 许可），文件 `results/segmentation/phase2_dev/checkpoints/best.pt`，44.8 MB，sha256 `12fa671d…2bf7`，已提交为 `models/segformer_best.pt`。
 - 作者公布的测试集指标（400 张）：room IoU 0.83；wall IoU 0.53（召回 0.85，精度 0.59，偏多判）；door IoU 0.20（开启弧线、楼梯符号常被判成门）；window IoU 0.41。
 - 该模型的训练设置：只用了 1,200 张训练图、18 轮、整图缩到 512 px。
 - 加载方式：用 `SegformerConfig(num_labels=5)`（默认即 MiT-b0）本地重建结构，再 `load_state_dict(strict=True)`；不需要访问 Hugging Face。
@@ -166,7 +163,7 @@ floorplan2bim/
 | WPU10710313 | 金属窗 | 窗 |
 | WPUIP2311001 | 住宅建设投入品综合 | 外墙、地面 |
 
-`python price_forecast/fetch_ppi.py` 下载 2010-01 至最新月份。可行性测试时数据截至 2026-08（金属窗截至 2026-06）。
+`data/ppi/ppi_monthly.csv` 已提交在仓库中：2010-01 至 2026-08（金属窗截至 2026-06），2026-10-31 从 FRED 网页手动下载（本机网络无法用脚本自动下载）。更新数据时，同样手动下载上表 7 个序列，按相同列名合并成这个文件。
 
 ### 5.4 演示用小图
 
@@ -219,12 +216,10 @@ floorplan2bim/
 
 - **0.1 环境（P0）**：Python 3.11；按 `requirements.txt` 安装，PyTorch 装 CUDA 版（4070 Super）。
   - 验收：`python -c "import torch; print(torch.cuda.is_available())"` 输出 True。
-- **0.2 下载（P0）**：
-  - `python scripts/download_checkpoint.py`（自动校验 sha256）
-  - `python scripts/fetch_demo_images.py`（如 samples/demo_images 为空）
-  - `python price_forecast/fetch_ppi.py`
-  - 手动下载 CubiCasa5K 并解压到 `data/cubicasa5k/`
+  - ✅ 本机 Python 3.13 + torch 2.9.1+cu126，CUDA 可用；transformers 需 ≥ 5.22。
+- **0.2 数据（P0）**：权重、演示图、价格指数已提交在仓库中；只需手动下载 CubiCasa5K 并解压到 `data/cubicasa5k/`。
   - 验收：四类数据都在；`data/cubicasa5k/test.txt` 存在。
+  - ✅ CubiCasa5K 5,000 张齐全（4200/400/400），无缺文件；验证集与测试集 800 个 SVG 全部可解析。多层图占测试集 25%（99/400）、验证集 20%（81/400）。
 - **0.3 验证标准答案的对齐和比例（P0，非常重要）**：
   - 任选 5 个测试集平面：用 `vectorization/svg_io.rasterize()` 把 `model.svg` 画成掩码，叠加到 `F1_scaled.png` 上，确认墙线重合。
   - 在 3–5 张印有房间面积（如 "MH 11.7" = 11.7 m² 卧室）的图上，用 SVG 房间多边形面积 ÷ 10,000 对比印刷面积，确认"100 单位 = 1 米"。误差应在 1–2% 以内。
@@ -263,7 +258,7 @@ floorplan2bim/
 ### 第 5 天（周三 11/4）：单价、价格、AACE
 
 - **3.1 真实单价（P0）**：替换 `config.UNIT_RATES`，并把 `UNIT_RATE_SOURCE` 写成引用。来源优先级：学校图书馆的 RSMeans（Building Construction Costs / Square Foot Costs）> 政府或行业公开单价资料 > 其他有出处的估价资料。每个单价记录来源与年份。
-- **3.2 价格模块复跑（P0）**：`python price_forecast/fetch_ppi.py` → `python price_forecast/backtest.py` → 用 `cost_by_month.cost_band()` 给演示平面加区间。核对结论是否与第 6 节一致（新数据会让数字略变）。
+- **3.2 价格模块复跑（P0）**：`python price_forecast/backtest.py`（价格数据见 5.3 节） → 用 `cost_by_month.cost_band()` 给演示平面加区间。核对结论是否与第 6 节一致（新数据会让数字略变）。
 - **3.3 敏感性分析（P1）**：材料占比 30% / 50% / 70% 下的区间宽度；写进报告讨论。
 - **3.4 AACE（P0）**：核实 AACE RP 18R-97 各级精度区间后更新 `config.AACE_CLASSES`；用 `evaluation/aace.py` 得出"系统达到第几级"。
 

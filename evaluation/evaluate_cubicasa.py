@@ -111,7 +111,8 @@ def eval_plan(folder, model, save_example=False, root=None):
     return row
 
 
-def summarize(df):
+def summarize(df, by_storeys=True):
+    """Overall summary; with --all-floors also split into single- and multi-storey sheets."""
     out = dict(n_plans=int(len(df)))
     for v in "ABCDE":
         col = f"{v}_cost_err_pct"
@@ -125,6 +126,9 @@ def summarize(df):
     out["mean_iou"] = {c: float(df[f"iou_{c}"].mean()) for c in config.SEG_CLASSES if f"iou_{c}" in df}
     out["scale_err_pct_median_abs"] = dict(gt_doors=float(df["scale_err_gt_doors_pct"].abs().median()),
                                            pred_doors=float(df["scale_err_pred_doors_pct"].abs().median()))
+    if by_storeys and df["n_floors"].nunique() > 1:
+        out["by_storeys"] = dict(single=summarize(df[df["n_floors"] == 1], False),
+                                 multi=summarize(df[df["n_floors"] > 1], False))
     return out
 
 

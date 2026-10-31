@@ -10,7 +10,6 @@ CUBICASA_DIR = DATA_DIR / "cubicasa5k"          # unzip the Zenodo archive here
 PPI_CSV = DATA_DIR / "ppi" / "ppi_monthly.csv"
 MODELS_DIR = ROOT / "models"
 SEGFORMER_CKPT = MODELS_DIR / "segformer_best.pt"
-SEGFORMER_SHA256 = "12fa671d58489c8f955e77b7631b47fb2359dd4b48cdf3c6a118ea209c4f2bf7"
 OUTPUTS_DIR = ROOT / "outputs"
 
 # ---------------------------------------------------------------- geometry assumptions

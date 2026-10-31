@@ -28,7 +28,7 @@ OUT = config.OUTPUTS_DIR / "price_forecast"
 
 def load_ppi():
     if not config.PPI_CSV.exists():
-        raise FileNotFoundError(f"{config.PPI_CSV} missing - run: python price_forecast/fetch_ppi.py")
+        raise FileNotFoundError(f"{config.PPI_CSV} missing - it is in the repo, run: git pull")
     return pd.read_csv(config.PPI_CSV, index_col=0, parse_dates=True).interpolate(limit=2)
 
 

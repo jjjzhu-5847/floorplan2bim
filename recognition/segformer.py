@@ -1,7 +1,7 @@
 """Run the public SegFormer-B0 CubiCasa5K checkpoint on a floor plan image.
 
 Checkpoint: github.com/alifarzadjamali/floor-plan-document-intelligence
-            results/segmentation/phase2_dev/checkpoints/best.pt  (download: scripts/download_checkpoint.py)
+            results/segmentation/phase2_dev/checkpoints/best.pt  (committed here as models/segformer_best.pt)
 The model was trained on 512 x 512 letterboxed images, so inference letterboxes to 512 as well.
 `segment_image` returns the mask at 512 px plus the transform needed to map 512-px coordinates
 back to the original image (see vectorization/transform.py).
@@ -29,7 +29,7 @@ def load_model(path=config.SEGFORMER_CKPT, device=None):
     if _MODEL is not None:
         return _MODEL
     if not Path(path).exists():
-        raise FileNotFoundError(f"{path} not found - run: python scripts/download_checkpoint.py")
+        raise FileNotFoundError(f"{path} not found - it is in the repo, run: git pull")
     model = SegformerForSemanticSegmentation(SegformerConfig(num_labels=len(config.SEG_CLASSES)))
     state = torch.load(path, map_location="cpu", weights_only=False)
     model.load_state_dict(state["model_state_dict"], strict=True)

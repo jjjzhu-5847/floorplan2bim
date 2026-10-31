@@ -30,6 +30,12 @@ def _poly(g):
     return p if p.is_valid else p.buffer(0)
 
 
+def polygon_parts(p):
+    """Non-empty Polygons of p. buffer(0) can turn a self-intersecting polygon into a MultiPolygon,
+    but the raw plan holds single Polygons only."""
+    return [g for g in getattr(p, "geoms", [p]) if g.geom_type == "Polygon" and g.area > 0]
+
+
 def parse_svg(path):
     """Returns raw plan dict + 'n_floors'. External walls: from the class name when present,
     otherwise geometric (walls touching the outline of all walls + rooms)."""
@@ -41,16 +47,16 @@ def parse_svg(path):
             n_floors += 1
         if gid == "Wall":
             p = _poly(g)
-            if p is not None and p.area > 0:
-                walls.append(dict(poly=p, external="External" in cls))
+            if p is not None:
+                walls += [dict(poly=q, external="External" in cls) for q in polygon_parts(p)]
         elif gid in ("Door", "Window"):
             p = _poly(g)
-            if p is not None and p.area > 0:
-                openings.append(dict(poly=p, kind=gid))
+            if p is not None and p.area > 0:  # one opening, so keep its largest part
+                openings.append(dict(poly=max(polygon_parts(p), key=lambda q: q.area), kind=gid))
         elif cls.startswith("Space "):
             p = _poly(g)
-            if p is not None and p.area > 0:
-                spaces.append(dict(poly=p, type=cls.split()[1]))
+            if p is not None:
+                spaces += [dict(poly=q, type=cls.split()[1]) for q in polygon_parts(p)]
     if walls and not any(w["external"] for w in walls):
         mark_external(walls, spaces)
     return dict(walls=walls, openings=openings, spaces=spaces, n_floors=max(n_floors, 1))

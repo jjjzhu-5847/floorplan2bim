@@ -10,10 +10,8 @@ Full plan, decisions and task list: **PROJECT_PLAN.md**. Working rules for Claud
 python -m venv .venv && source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install torch --index-url https://download.pytorch.org/whl/cu124   # CUDA build for an RTX GPU
 pip install -r requirements.txt
-python scripts/download_checkpoint.py     # models/segformer_best.pt (sha256 checked)
-python scripts/fetch_demo_images.py       # samples/demo_images/*.png (if missing)
-python price_forecast/fetch_ppi.py        # data/ppi/ppi_monthly.csv from FRED
-# CubiCasa5K: download Zenodo record 2613548 and unzip to data/cubicasa5k/
+# Already in the repo: models/segformer_best.pt, samples/demo_images/, data/ppi/ppi_monthly.csv
+# Not in the repo (~5 GB): CubiCasa5K - download Zenodo record 2613548 and unzip to data/cubicasa5k/
 ```
 
 ## Common commands

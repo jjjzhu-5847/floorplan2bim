@@ -20,6 +20,7 @@ from shapely.geometry import Polygon, box
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config  # noqa: E402
+from vectorization.svg_io import polygon_parts  # noqa: E402
 
 
 def _merge(segs, tol=3, gap=4):
@@ -47,7 +48,7 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX):
     skel = skeletonize(wall > 0).astype(np.uint8) * 255
     lines = cv2.HoughLinesP(skel, 1, np.pi / 180, threshold=8, minLineLength=6, maxLineGap=3)
     H, V = [], []
-    for x1, y1, x2, y2 in (lines[:, 0] if lines is not None else []):
+    for x1, y1, x2, y2 in (lines.reshape(-1, 4) if lines is not None else []):  # (N,1,4) in OpenCV 4, (N,4) in 5
         dx, dy = abs(x2 - x1), abs(y2 - y1)
         if dx >= 3 * dy:
             ys = np.linspace(y1, y2, max(dx, 2)).round().astype(int)
@@ -124,7 +125,8 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX):
     # exterior = walls on the outline of the largest built-up region
     solid = np.isin(mask, [1, 2, 3, 4]).astype(np.uint8)
     cnts, _ = cv2.findContours(solid, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    outlines = [Polygon(c[:, 0, :]).buffer(0).exterior for c in cnts if cv2.contourArea(c) > 2000]
+    outlines = [p.exterior for c in cnts if cv2.contourArea(c) > 2000
+                for p in polygon_parts(Polygon(c[:, 0, :]).buffer(0))]
     raw_walls = [dict(poly=W["poly"], external=any(W["poly"].distance(o) < 4 for o in outlines)) for W in walls]
     # rooms: room pixels minus walls, split into regions
     wall_px = np.zeros_like(mask)
@@ -141,5 +143,5 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX):
         c, _ = cv2.findContours((lab == i).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         c = cv2.approxPolyDP(max(c, key=cv2.contourArea), 2, True)
         if len(c) >= 3:
-            spaces.append(dict(poly=Polygon(c[:, 0, :]).buffer(0), type="Room"))
+            spaces += [dict(poly=p, type="Room") for p in polygon_parts(Polygon(c[:, 0, :]).buffer(0))]
     return dict(walls=raw_walls, openings=raw_open, spaces=spaces)
