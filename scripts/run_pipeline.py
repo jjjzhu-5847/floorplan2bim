@@ -22,10 +22,11 @@ def main():
     ap.add_argument("--label", help="display name on the web page")
     ap.add_argument("--px-per-m", type=float, help="known scale; default: estimate from door widths")
     ap.add_argument("--no-ifc", action="store_true")
+    ap.add_argument("--gt-svg", help="CubiCasa model.svg of the same plan: adds the 'vs ground truth' view")
     a = ap.parse_args()
     src = a.image or a.svg
     name = a.name or Path(src).stem
-    res = run_image(src, a.px_per_m) if a.image else run_svg(src, a.px_per_m)
+    res = run_image(src, a.px_per_m, gt_svg=a.gt_svg) if a.image else run_svg(src, a.px_per_m)
     out = config.OUTPUTS_DIR / "plans" / name
     save_plan(res, out, name=a.label or name, with_ifc=not a.no_ifc)
     q, c = res["quantities"], res["cost"]

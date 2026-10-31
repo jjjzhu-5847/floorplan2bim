@@ -177,6 +177,7 @@ def main():
     ap.add_argument("--all-floors", action="store_true", help="include multi-storey sheets")
     ap.add_argument("--examples", type=int, default=10, help="save figures for the first N plans")
     ap.add_argument("--root", help="dataset root (default config.CUBICASA_DIR)")
+    ap.add_argument("--ckpt", help="SegFormer checkpoint (default config.SEGFORMER_CKPT)")
     ap.add_argument("--no-ocr", action="store_true", help="skip OCR of printed room areas (faster; changes only B/E)")
     ap.add_argument("--plans-file", help="list of plan folders in split-file format, e.g. outputs/rq4/train_unseen.txt")
     ap.add_argument("--out", help="output folder (default outputs/evaluation)")
@@ -190,7 +191,7 @@ def main():
     if a.limit:
         plans = plans[:a.limit]
     print(f"{len(plans)} plans in {a.plans_file or 'split ' + a.split}")
-    model = load_model()
+    model = load_model(a.ckpt) if a.ckpt else load_model()
     rows, failed = [], []
     for i, folder in enumerate(plans):
         try:

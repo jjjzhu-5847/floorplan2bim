@@ -21,8 +21,8 @@ def page_data(plan_ids=None, extra_plans=()):
     dirs = [root / p for p in plan_ids] if plan_ids else sorted(d for d in root.glob("*") if (d / "plan.json").exists())
     plans = [json.load(open(d / "plan.json")) for d in dirs if (d / "plan.json").exists()] + list(extra_plans)
     err_p = config.OUTPUTS_DIR / "evaluation" / "error_demo.json"
-    note = (f"Unit rates: {config.UNIT_RATE_SOURCE}. Plan images are scaled from door widths unless a scale was given; "
-            "takeoffs from CV output are approximate.")
+    note = (f"Unit rates: {config.UNIT_RATE_SOURCE}. Plan images are scaled from door widths, wall thicknesses and "
+            "printed room areas unless a scale was given; takeoffs from CV output are approximate.")
     return dict(plans=plans, err=json.load(open(err_p)) if err_p.exists() else None,
                 meta=dict(note=note))
 

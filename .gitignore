@@ -1,3 +1,4 @@
 data/cubicasa5k/
 __pycache__/
 .venv/
+data/seg_cache/
