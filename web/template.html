@@ -1,0 +1,368 @@
+<title>Plan-to-BIM Takeoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --ink:#1c2220; --muted:#5b6560; --line:#dde2df;
+  --accent:#1f6f8b; --accent-soft:#e3eff3; --wall:#d9dfdb; --wall-ext:#a9b5af;
+  --glass:#7fb8d4; --door:#b98a5a; --floor:#eef1ee; --warn:#b4541f;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --display:"Archivo","IBM Plex Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121614; --panel:#1a201d; --ink:#e4e9e6; --muted:#9aa5a0; --line:#2c3531;
+    --accent:#5fb3d0; --accent-soft:#1d3139; --wall:#b9c2bd; --wall-ext:#7f8c86;
+    --floor:#262d2a; --warn:#e38a58;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121614; --panel:#1a201d; --ink:#e4e9e6; --muted:#9aa5a0; --line:#2c3531;
+  --accent:#5fb3d0; --accent-soft:#1d3139; --wall:#b9c2bd; --wall-ext:#7f8c86;
+  --floor:#262d2a; --warn:#e38a58;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);padding:24px 16px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(24px,3.4vw,34px)/1.1 var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:72ch;margin:0}
+.note{font-size:12.5px;color:var(--warn);max-width:80ch;margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.stage{position:relative;overflow:hidden}
+#view{display:block;width:100%;aspect-ratio:4/3;max-width:100%;touch-action:none}
+.labels{position:absolute;inset:0;pointer-events:none}
+.labels span{position:absolute;transform:translate(-50%,-50%);font:500 11px/1.2 var(--sans);color:var(--ink);
+  background:color-mix(in srgb,var(--panel) 82%,transparent);padding:2px 6px;border-radius:4px;white-space:nowrap;text-align:center}
+.labels span b{display:block;font:500 10.5px/1.2 var(--mono);color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{font:500 12.5px var(--sans);background:transparent;color:var(--ink);border:0;padding:6px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.hint{margin-left:auto;font-size:12px;color:var(--muted)}
+.side{display:flex;flex-direction:column;gap:20px}
+.sect{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+h2{font:600 13px/1.2 var(--sans);margin:0;letter-spacing:.02em}
+h2 small{font-weight:400;color:var(--muted);margin-left:6px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+th{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left}
+td.n,th.n{text-align:right;font-family:var(--mono);font-size:13px}
+td.u{color:var(--muted);font:12px var(--mono);padding-left:6px;width:3.5em}
+tr.group td{padding-top:10px;font-weight:600;border-bottom:0;font-size:12px;color:var(--muted)}
+tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padding-top:8px}
+.foot{font-size:12px;color:var(--muted);margin:0}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,15em) 1fr 4.2em;gap:10px;align-items:center;font-size:13px}
+.track{height:10px;background:var(--floor);border-radius:3px;position:relative}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:0 4px 4px 0}
+.fill.hot{background:var(--warn)}
+.bar .v{font:500 13px var(--mono);text-align:right}
+@media (max-width:520px){.bar{grid-template-columns:1fr 4em}.bar .track{grid-column:1/-1;grid-row:2}}
+.pipeline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:500 12px var(--mono);color:var(--muted)}
+.pipeline span{padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.pipeline span.on{border-color:var(--accent);color:var(--accent)}
+.pipeline i{font-style:normal}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.picker .lbl{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.upload{font:500 12.5px var(--sans);border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:6px 12px;cursor:pointer}
+.upload input{display:none}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px 16px}
+@media (max-width:640px){.strip{grid-template-columns:1fr}}
+.strip figure{margin:0;display:flex;flex-direction:column;gap:6px}
+.strip img{width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
+.strip figcaption{font-size:12px;color:var(--muted)}
+.month{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.month{grid-template-columns:1fr}}
+.chartbox{overflow-x:auto}
+#band{display:block;width:100%;min-width:420px;height:auto}
+#band text{font:11px var(--mono);fill:var(--muted)}
+.readout{display:flex;flex-direction:column;gap:12px}
+.big{font:700 30px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.range{font:500 13px var(--mono);color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv span:nth-child(even){font-family:var(--mono);text-align:right}
+td.better{color:var(--accent);font-weight:600}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Floor plan → BIM → takeoff → cost by start month</div>
+    <h1>Plan-to-BIM Takeoff</h1>
+    <p class="lede">A floor plan image is segmented by a CV model, turned into walls, doors, windows and rooms, calibrated to metres from door widths, and built into a 3D model. The system then measures quantities and prices them, and shows how the cost could move depending on the month construction starts.</p>
+    <p class="note" id="metaNote"></p>
+  </header>
+
+  <div class="picker" role="group" aria-label="Choose a plan">
+    <span class="lbl">Plan</span>
+    <div class="seg" id="planSeg"></div>
+    <label class="upload" id="uploadBox" hidden><input type="file" id="upload" accept="image/png,image/jpeg"><span id="uploadTxt">Upload a floor plan image</span></label>
+  </div>
+
+  <div class="grid">
+    <div class="card stage">
+      <canvas id="view" aria-label="3D model of the selected floor plan"></canvas>
+      <div class="labels" id="labels"></div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Camera">
+          <button id="cam3d" aria-pressed="true">3D</button>
+          <button id="camTop" aria-pressed="false">Top view</button>
+        </div>
+        <div class="seg" role="group" aria-label="Wall height">
+          <button id="wFull" aria-pressed="true">Full walls</button>
+          <button id="wCut" aria-pressed="false">Cutaway 1.2 m</button>
+        </div>
+        <span class="hint">Drag to orbit · scroll to zoom</span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card sect">
+        <h2>Quantity takeoff <small id="qtoSub">from the model</small></h2>
+        <table id="qto"></table>
+        <p class="foot">Wall height 2.7 m, door 2.1 m, window 0.9–2.1 m (assumed). Wall length is footprint ÷ thickness, so corners are counted once.</p>
+      </div>
+      <div class="card sect">
+        <h2>Cost today <small>walls, floors and openings only</small></h2>
+        <table id="cost"></table>
+        <p class="foot">Placeholder unit rates (USD): exterior wall 180/m², partition 75/m², floor finish 60/m², interior door 450, entrance door 1,200, window 550/m².</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="realStrip" hidden>
+    <div class="sect" style="padding-bottom:0"><h2>From image to geometry <small>the real CV output behind this model</small></h2></div>
+    <div class="strip">
+      <figure><img id="imIn" alt="Original floor plan image"><figcaption>Plan image (CubiCasa5K)</figcaption></figure>
+      <figure><img id="imSeg" alt="Segmentation result"><figcaption>SegFormer-B0 segmentation: dark = wall, orange = door, blue = window / room</figcaption></figure>
+      <figure><img id="imVec" alt="Vectorized plan"><figcaption>First-pass vectorization. Some interior walls and doors are missed; this is the step the project improves.</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card sect" id="monthCard">
+    <h2>When to build <small>material part of the cost follows forecast price indices</small></h2>
+    <div class="month">
+      <div class="chartbox"><svg id="band" viewBox="0 0 640 260" role="img" aria-label="Cost range by construction start month"></svg></div>
+      <div class="readout">
+        <label for="mSlider" class="lbl" style="font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Construction start month</label>
+        <input type="range" id="mSlider" min="0" max="11" value="5">
+        <div><div class="big" id="mCost"></div><div class="range" id="mRange"></div></div>
+        <div class="kv" id="mKv"></div>
+      </div>
+    </div>
+    <p class="foot">Each cost item maps to BLS producer price indices (e.g. partitions: 40% softwood lumber, 60% gypsum). Half of each item's cost is treated as material. Labour is held at today's rate. The line is an ARIMA forecast. The band is the 10th–90th percentile of ARIMA's own past forecast errors, replayed jointly across materials from every historical start point since 2016.</p>
+  </div>
+
+  <div class="card sect" id="fcCard">
+    <h2>Can these prices be forecast? <small id="fcSub">12-month-ahead error, rolling backtest</small></h2>
+    <div style="overflow-x:auto"><table id="fc"></table></div>
+    <p class="foot" id="fcNote"></p>
+  </div>
+
+  <div class="card sect" id="errCard">
+    <h2>What moves the estimate <small>mean absolute error in total cost, 500 simulated runs each (test plan)</small></h2>
+    <div class="bars" id="bars"></div>
+    <p class="foot">Ground-truth geometry of the test plan is damaged the way a CV model typically fails, and the cost is recomputed. Scale calibration from door widths is the largest source of error: the 95th-percentile run overestimates cost by <span id="p95"></span>. The full project measures this on real plans against CubiCasa's annotated SVGs.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const PAGE = __DATA__;
+const fmt = (v, d=1) => Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let plan = PAGE.plans[0], monthIdx = 5;
+
+// ---------- plan picker
+function renderPicker(sel){
+  $('planSeg').innerHTML = PAGE.plans.map((p,i) => `<button data-i="${i}" aria-pressed="${i===sel}">${p.name}</button>`).join('');
+}
+renderPicker(0);
+$('planSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  [...$('planSeg').children].forEach(x => x.setAttribute('aria-pressed', x === b));
+  plan = PAGE.plans[+b.dataset.i]; renderPlan();
+});
+$('metaNote').textContent = PAGE.meta && PAGE.meta.note ? PAGE.meta.note : '';
+if (window.LIVE_API){
+  $('uploadBox').hidden = false;
+  $('upload').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    $('uploadTxt').textContent = 'Processing ' + f.name + '…';
+    const fd = new FormData(); fd.append('file', f);
+    try {
+      const r = await fetch('/api/plan', {method:'POST', body:fd});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || r.statusText);
+      PAGE.plans.push(d); plan = d; renderPicker(PAGE.plans.length - 1); renderPlan();
+      $('uploadTxt').textContent = 'Upload another floor plan';
+    } catch (err) { $('uploadTxt').textContent = 'Could not process this image: ' + err.message; }
+    e.target.value = '';
+  });
+}
+
+function renderTables(){
+  const Q = plan.quantities, C = plan.cost;
+  const rows = [
+    ['Exterior walls'], ['Length', Q.ext_wall_length_m, 'm'], ['Net face area', Q.ext_wall_net_area_m2, 'm²'],
+    ['Interior partitions'], ['Length', Q.int_wall_length_m, 'm'], ['Net face area', Q.int_wall_net_area_m2, 'm²'],
+    ['Openings'], ['Entrance doors', Q.doors_entry, 'ea', 0], ['Interior doors', Q.doors_interior, 'ea', 0], ['Windows', Q.windows, 'ea', 0], ['Window area', Q.window_area_m2, 'm²'],
+    ['Floors'], ['Net floor area', Q.floor_area_m2, 'm²'],
+  ];
+  $('qto').innerHTML = rows.map(r => r.length === 1 ? `<tr class="group"><td colspan="3">${r[0]}</td></tr>`
+    : `<tr><td>${r[0]}</td><td class="n">${r[1] == null ? '–' : fmt(r[1], r[3] ?? 1)}</td><td class="u">${r[2]}</td></tr>`).join('');
+  $('qtoSub').textContent = plan.real ? 'first pass from CV output' : 'from the model';
+  $('cost').innerHTML = `<tr><th>Item</th><th class="n">USD</th></tr>` +
+    Object.entries(C).filter(([k]) => k !== 'TOTAL').map(([k,v]) => `<tr><td>${k}</td><td class="n">${fmt(v,0)}</td></tr>`).join('') +
+    `<tr class="total"><td>Total (partial scope)</td><td class="n">${fmt(C.TOTAL,0)}</td></tr>`;
+  $('realStrip').hidden = !plan.real;
+  if (plan.real){ $('imIn').src = plan.images.input; $('imSeg').src = plan.images.seg; $('imVec').src = plan.images.vector; }
+}
+
+// ---------- start-month band chart
+function monthLabel(m){ const [y,mo] = m.split('-'); return new Date(+y, +mo-1, 1).toLocaleString('en-US',{month:'short'}) + ' ' + y.slice(2); }
+function renderBand(){
+  $('monthCard').hidden = !plan.band;
+  if (!plan.band) return;
+  const B = plan.band, today = plan.cost.TOTAL, svg = $('band');
+  const W = 640, H = 260, L = 64, R = 14, T = 14, Bm = 34;
+  const lo = Math.min(today, ...B.map(b => b.p10)), hi = Math.max(...B.map(b => b.p90));
+  const pad = (hi - lo) * 0.12, y0 = lo - pad, y1 = hi + pad;
+  const x = i => L + (W - L - R) * (i + 0.5) / B.length, y = v => T + (H - T - Bm) * (1 - (v - y0) / (y1 - y0));
+  const nice = (() => { const span = y1 - y0, step = Math.pow(10, Math.floor(Math.log10(span / 4))); const m = [1,2,2.5,5,10].find(k => span / (k*step) <= 5) * step; return m; })();
+  let g = '';
+  for (let v = Math.ceil(y0 / nice) * nice; v <= y1; v += nice)
+    g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">$${fmt(v/1000, 1)}k</text>`;
+  const area = B.map((b,i) => `${x(i)},${y(b.p90)}`).join(' ') + ' ' + B.slice().reverse().map((b,j) => `${x(B.length-1-j)},${y(b.p10)}`).join(' ');
+  g += `<polygon points="${area}" fill="${css('--accent')}" fill-opacity="0.16"/>`;
+  g += `<line x1="${L}" x2="${W-R}" y1="${y(today)}" y2="${y(today)}" stroke="${css('--muted')}" stroke-dasharray="4 4"/><text x="${W-R}" y="${y(today)-6}" text-anchor="end">today $${fmt(today/1000,1)}k</text>`;
+  g += `<polyline points="${B.map((b,i) => `${x(i)},${y(b.point)}`).join(' ')}" fill="none" stroke="${css('--accent')}" stroke-width="2"/>`;
+  B.forEach((b,i) => { if (i % 2 === 0) g += `<text x="${x(i)}" y="${H-12}" text-anchor="middle">${monthLabel(b.month)}</text>`; });
+  const s = B[monthIdx];
+  g += `<line x1="${x(monthIdx)}" x2="${x(monthIdx)}" y1="${T}" y2="${H-Bm}" stroke="${css('--ink')}" stroke-opacity=".25"/>`;
+  g += `<circle cx="${x(monthIdx)}" cy="${y(s.point)}" r="5" fill="${css('--accent')}" stroke="${css('--panel')}" stroke-width="2"/>`;
+  g += B.map((b,i) => `<rect x="${x(i)-(W-L-R)/B.length/2}" y="${T}" width="${(W-L-R)/B.length}" height="${H-T-Bm}" fill="transparent" data-i="${i}" style="cursor:pointer"/>`).join('');
+  svg.innerHTML = g;
+  $('mSlider').value = monthIdx;
+  $('mCost').textContent = '$' + fmt(s.point, 0);
+  $('mRange').textContent = `80% range $${fmt(s.p10,0)} – $${fmt(s.p90,0)}`;
+  const d = (s.point / today - 1) * 100;
+  $('mKv').innerHTML = `<span>Start month</span><span>${monthLabel(s.month)}</span><span>Cost today (Aug 26)</span><span>$${fmt(today,0)}</span><span>Expected change</span><span>${d >= 0 ? '+' : ''}${d.toFixed(1)}%</span><span>Worst-case (90th pct)</span><span>+${((s.p90/today-1)*100).toFixed(1)}%</span>`;
+}
+$('mSlider').addEventListener('input', e => { monthIdx = +e.target.value; renderBand(); });
+$('band').addEventListener('pointermove', e => { const r = e.target.closest('rect[data-i]'); if (r && +r.dataset.i !== monthIdx){ monthIdx = +r.dataset.i; renderBand(); } });
+
+// ---------- forecast table + error bars (plan independent)
+const F = PAGE.forecast;
+$('fcCard').hidden = !F;
+if (F) {
+$('fc').innerHTML = `<tr><th>Price index</th><th class="n">No-change guess</th><th class="n">ARIMA</th></tr>` +
+  F.per_series.map(r => `<tr><td>${r.name}</td><td class="n${r.naive < r.arima ? ' better' : ''}">${r.naive.toFixed(1)}%</td><td class="n${r.arima < r.naive ? ' better' : ''}">${r.arima.toFixed(1)}%</td></tr>`).join('') +
+  `<tr class="total"><td>All indices, 12 months ahead</td><td class="n">${F.pooled[12].naive.toFixed(1)}%</td><td class="n">${F.pooled[12].arima.toFixed(1)}%</td></tr>`;
+$('fcSub').textContent = `12-month-ahead error, backtest 2016 – ${F.data_end || ''}`;
+{ const win = F.per_series.filter(r => r.arima < r.naive).map(r => r.name), lose = F.per_series.filter(r => r.arima >= r.naive).map(r => r.name);
+  $('fcNote').textContent = `Mean absolute error of the index level 12 months ahead; the better method is highlighted. ARIMA beats the no-change guess for: ${win.join(', ') || 'none'}. It does not for: ${lose.join(', ') || 'none'}. At 3 months ahead: ${F.pooled[3].naive.toFixed(1)}% (no change) vs ${F.pooled[3].arima.toFixed(1)}% (ARIMA). The page therefore shows a cost range, not a single price.`; }
+}
+const E = PAGE.err;
+$('errCard').hidden = !E;
+if (E) {
+const bars = [
+  ['Miss 10% of interior walls', E['miss 10% interior walls'].mae], ['Miss 10% of windows', E['miss 10% windows'].mae],
+  ['Miss 10% of doors', E['miss 10% doors'].mae], ['Scale from door widths', E['scale from door widths (0.8/0.9/1.0 mix)'].mae, true]];
+const bmax = Math.max(...bars.map(b => b[1])) * 1.1;
+$('bars').innerHTML = bars.map(([l,v,hot]) => `<div class="bar"><span>${l}</span><div class="track"><div class="fill${hot?' hot':''}" style="width:${v/bmax*100}%"></div></div><span class="v">${v.toFixed(1)}%</span></div>`).join('');
+$('p95').textContent = '+' + E['scale from door widths (0.8/0.9/1.0 mix)'].p95.toFixed(0) + '%';
+}
+
+// ---------- 3D
+const canvas = $('view'), labelsEl = $('labels');
+let rebuild3D = () => {};
+if (window.THREE && THREE.OrbitControls) {
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
+  const controls = new THREE.OrbitControls(camera, canvas); controls.enableDamping = true;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.55); scene.add(sun);
+  const group = new THREE.Group(); scene.add(group);
+  const tint = {LivingRoom:'#e8d9b8', Kitchen:'#cfe3d4', Bedroom:'#d6dcef', Bath:'#cfe6ee', Entry:'#e6e1d8', Room:'#dfe7ee'};
+  let cut = false, cx = 0, cz = 0, span = 10, labelNodes = [];
+  const mat = (c, o={}) => new THREE.MeshLambertMaterial(Object.assign({color:new THREE.Color(c)}, o));
+  function build(){
+    group.clear();
+    const D = plan, lim = cut ? 1.2 : D.H;
+    const pts = D.boxes.map(b => [b[0], b[1]]).concat(D.rooms.flatMap(r => r.pts));
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    cx = (x0 + x1) / 2; cz = (y0 + y1) / 2; span = Math.max(x1 - x0, y1 - y0);
+    const M = {wall: mat(css('--wall')), ext: mat(css('--wall-ext')), floor: mat(css('--floor')), glass: mat(css('--glass'), {transparent:true, opacity:.45}), door: mat(css('--door'))};
+    for (const r of D.rooms){
+      const g = new THREE.ShapeGeometry(new THREE.Shape(r.pts.map(p => new THREE.Vector2(p[0], p[1])))); g.rotateX(Math.PI/2);
+      const m = new THREE.Mesh(g, mat(tint[r.type] || css('--floor'), {side:THREE.DoubleSide})); m.position.y = .005; group.add(m);
+    }
+    const slab = new THREE.Shape([[x0-.3,y0-.3],[x1+.3,y0-.3],[x1+.3,y1+.3],[x0-.3,y1+.3]].map(p => new THREE.Vector2(...p)));
+    const sg = new THREE.ExtrudeGeometry(slab, {depth:.2, bevelEnabled:false}); sg.rotateX(Math.PI/2); group.add(new THREE.Mesh(sg, M.floor));
+    for (const [x,y,z0,len,t,h,ang,ext] of D.boxes){
+      const top = Math.min(z0+h, lim); if (top <= z0 + 1e-3) continue;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(len, top-z0, t), ext ? M.ext : M.wall);
+      m.position.set(x, z0 + (top-z0)/2, y); m.rotation.y = -ang; group.add(m);
+    }
+    for (const [kind,x,y,z0,w,h,ang] of D.panels){
+      const top = Math.min(z0+h, lim); if (top <= z0 + 1e-3) continue;
+      if (kind === 'Door'){
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(w*.96, top-z0, .04), M.door);
+        const piv = new THREE.Group(); piv.position.set(x, 0, y); piv.rotation.y = -ang;
+        leaf.position.set(-w/2 + w*.48*Math.cos(1.22), z0 + (top-z0)/2, w*.48*Math.sin(1.22)); leaf.rotation.y = -1.22;
+        piv.add(leaf); group.add(piv);
+      } else {
+        const g = new THREE.Mesh(new THREE.BoxGeometry(w, top-z0, .03), M.glass);
+        g.position.set(x, z0 + (top-z0)/2, y); g.rotation.y = -ang; group.add(g);
+      }
+    }
+    labelsEl.innerHTML = D.rooms.filter(r => r.area >= 1.5).map(r => `<span data-c="${r.c}">${r.type.replace('LivingRoom','Living room')}<b>${r.area.toFixed(1)} m²</b></span>`).join('');
+    labelNodes = [...labelsEl.children].map(n => [n, n.dataset.c.split(',').map(Number)]);
+  }
+  function setCam(mode){
+    controls.target.set(cx, .8, cz);
+    if (mode === 'top') camera.position.set(cx, span * 1.9, cz + .001);
+    else camera.position.set(cx - span * .75, span * 1.2, cz + span * 1.4);
+    sun.position.set(cx - 6, 12, cz + 9); controls.update();
+    $('cam3d').setAttribute('aria-pressed', mode !== 'top'); $('camTop').setAttribute('aria-pressed', mode === 'top');
+  }
+  rebuild3D = () => { build(); setCam('3d'); };
+  $('cam3d').onclick = () => setCam('3d'); $('camTop').onclick = () => setCam('top');
+  const setCut = v => { cut = v; build(); $('wFull').setAttribute('aria-pressed', !v); $('wCut').setAttribute('aria-pressed', v); };
+  $('wFull').onclick = () => setCut(false); $('wCut').onclick = () => setCut(true);
+  const v = new THREE.Vector3();
+  (function frame(){
+    const w = canvas.clientWidth, h = canvas.clientHeight, pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.round(w*pr) || canvas.height !== Math.round(h*pr)){ renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+    controls.update(); renderer.render(scene, camera);
+    for (const [n, c] of labelNodes){ v.set(c[0], .05, c[1]).project(camera); n.style.left = ((v.x+1)/2*w)+'px'; n.style.top = ((1-v.y)/2*h)+'px'; }
+    requestAnimationFrame(frame);
+  })();
+  const retheme = () => build();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+} else {
+  labelsEl.innerHTML = '<span style="left:50%;top:50%">The 3D library did not load. The tables still show the takeoff.</span>';
+}
+
+function renderPlan(){ renderTables(); renderBand(); rebuild3D(); }
+renderPlan();
+const reband = () => renderBand();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', reband);
+new MutationObserver(reband).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+</script>

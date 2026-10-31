@@ -1,0 +1,16 @@
+# Python 3.10-3.12
+numpy
+pandas
+scipy
+pillow
+opencv-python
+scikit-image
+shapely>=2.0
+ifcopenshell>=0.8
+statsmodels
+matplotlib
+transformers>=4.40
+flask            # only for web/app.py (live demo)
+# PyTorch: install the CUDA build for your GPU first, e.g. for an RTX 4070 Super:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch
