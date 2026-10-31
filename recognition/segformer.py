@@ -49,6 +49,18 @@ def letterbox(img, size=config.SEG_INPUT_SIZE):
     return canvas, (s, left, top)
 
 
+def prepare_input(img, size=config.SEG_WORK_SIZE):
+    """Working image and transform (scale, left, top). size=None: the original resolution (CubiCasa scans are about
+    1 px = 1 cm), padded with white to at least one tile; otherwise letterboxed to size x size."""
+    if size:
+        return letterbox(img, size)
+    h, w = img.shape[:2]
+    t = config.SEG_INPUT_SIZE
+    canvas = np.full((max(h, t), max(w, t), 3), 255, np.uint8)
+    canvas[:h, :w] = img
+    return canvas, (1.0, 0, 0)
+
+
 def _logits(model, img):
     """C x H x W logits at the size of img."""
     x = (img.astype(np.float32) / 255.0 - MEAN) / STD
@@ -100,7 +112,7 @@ def segment_image(path_or_array, model=None, size=config.SEG_WORK_SIZE, tile=con
     original_shape); the "512" keys hold the working-size image and mask whatever the working size is."""
     img = path_or_array if isinstance(path_or_array, np.ndarray) else np.array(Image.open(path_or_array).convert("RGB"))
     model = model or load_model()
-    img_w, tf = letterbox(img, size)
+    img_w, tf = prepare_input(img, size)
     mask, conf = segment(model, img_w, tile, with_conf=True)
     return dict(image512=img_w, mask512=mask, transform=tf, original_shape=img.shape[:2], confidence=conf)
 

@@ -43,7 +43,8 @@ SCALE_CALIBRATED = dict(sizes=dict(doors=1.010, ext_walls=0.352, int_walls=0.199
 # ---------------------------------------------------------------- recognition
 SEG_CLASSES = ["background", "room", "wall", "door", "window"]
 SEG_INPUT_SIZE = 512                       # the public checkpoint was trained on 512 x 512
-SEG_WORK_SIZE = 512                        # plans are letterboxed to this size for recognition (task 2.2)
+SEG_WORK_SIZE = 512                        # plans are letterboxed to this size for recognition (task 2.2);
+                                           # None = original resolution (needs SEG_TILE and a model trained on it)
 SEG_TILE = None                            # None: one pass; 512: overlapping 512-px tiles at the working size
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)

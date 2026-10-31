@@ -30,7 +30,7 @@ from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config  # noqa: E402
-from recognition.segformer import load_model, letterbox, segment, overlay  # noqa: E402
+from recognition.segformer import load_model, prepare_input, segment, overlay  # noqa: E402
 from vectorization.svg_io import parse_svg, rasterize, write_svg  # noqa: E402
 from vectorization.vectorize import vectorize_mask  # noqa: E402
 from vectorization.transform import to_original  # noqa: E402
@@ -104,7 +104,7 @@ def eval_plan(folder, model, save_example=False, root=None, size=config.SEG_WORK
     row.update({f"scale_err_gt_{m}_pct": err(v) for m, v in est.items()})
     if ppm_gt:
         versions["B"] = measure(gt, ppm_gt)
-    img512, tf = letterbox(img, size)
+    img512, tf = prepare_input(img, size)
     s, left, top = tf
     gt_mask = rasterize(gt, img512.shape[:2], scale=s, offset=(left, top))
     raw_c = to_original(vectorize_mask(gt_mask), tf)
@@ -181,7 +181,8 @@ def main():
     ap.add_argument("--no-ocr", action="store_true", help="skip OCR of printed room areas (faster; changes only B/E)")
     ap.add_argument("--plans-file", help="list of plan folders in split-file format, e.g. outputs/rq4/train_unseen.txt")
     ap.add_argument("--out", help="output folder (default outputs/evaluation)")
-    ap.add_argument("--size", type=int, default=config.SEG_WORK_SIZE, help="recognition working size (px)")
+    ap.add_argument("--size", type=int, default=config.SEG_WORK_SIZE or 0,
+                    help="recognition working size (px); 0 = original resolution (use with --tile 512)")
     ap.add_argument("--tile", type=int, default=config.SEG_TILE or 0, help="tile size for tiled recognition (0 = one pass)")
     a = ap.parse_args()
     global OUT
@@ -197,7 +198,7 @@ def main():
         try:
             if not a.all_floors and parse_svg(folder / "model.svg")["n_floors"] > 1:
                 continue
-            rows.append(eval_plan(folder, model, save_example=len(rows) < a.examples, root=a.root, size=a.size,
+            rows.append(eval_plan(folder, model, save_example=len(rows) < a.examples, root=a.root, size=a.size or None,
                                   tile=a.tile or None, ocr=not a.no_ocr))
         except Exception as e:  # noqa: BLE001
             failed.append(dict(plan=str(folder), error=repr(e), tb=traceback.format_exc(limit=2)))

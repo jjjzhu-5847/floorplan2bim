@@ -429,6 +429,21 @@ floorplan2bim/
 - 新增原图测量（`bim_generation/scale.py` 的 `doors_img`、`ext_walls_img`）：模型给位置，回原图按墨迹量门宽/墙厚。系统性偏差消失（门 0.77 m，接近真值 0.80），单层尺度误差 11.5% → 10.7%，多层偏差明显减小；`config.SCALE_CALIBRATED` 已按 `outputs/evaluation_val_fullres` 重新校准（全部五种 + OCR）。**E 的新数字还没跑**（验证集运行被中断）。
 - 诊断（`python evaluation/diag_door_scale.py`，验证集单层）：门宽推尺度的离散度——标准答案的门 5.3%；**标准答案掩码 → 我们的矢量化 5.6%**；**SegFormer → 我们的矢量化 13.4%**。结论：矢量化不是问题，**多出的约 8 个百分点来自识别模型** → 训练模型值得做。另：原图测量在干净输入上反而更差（9.5%），测量规则会被剖面线/文字/门扇干扰，有改进空间。
 
+### 2026-10-31 自训练识别模型（任务 5.5 进行中）
+- 脚本 `recognition/train_segformer.py`。训练集：原模型见过的 1,200 张 + 另抽 1,800 张（共 3,000，`outputs/rq4/train_ours.txt`）；剩余 1,200 张两个模型都没见过，留给 RQ4（`outputs/rq4/train_heldout.txt`）。标注用我们自己的栅格化（门 = 墙上的门洞）。
+- **512 微调**（`models/segformer_ours.pt`，从公开权重继续训 30 轮，最好第 27 轮）：验证集整条流程对比（`python evaluation/compare_models.py outputs/evaluation_val_fullres outputs/evaluation_val_m512`）：
+
+| 单层验证集 | 公开模型 | 512 微调 |
+|---|---|---|
+| IoU 墙 / 门 / 窗 / 房间 | 0.603 / 0.250 / 0.482 / 0.788 | 0.644 / 0.356 / 0.574 / 0.878 |
+| 3D 墙查准 / 查全 / 占地 IoU | 0.896 / 0.929 / 0.509 | 0.906 / 0.957 / 0.541 |
+| 找到的房间比例 | 0.50 | 0.64 |
+| 尺度误差 | 11.6% | 10.0% |
+| E 造价中位误差 / ±20% 内 | 18.6% / 53% | 16.5% / 61% |
+
+- **原图分辨率训练**（进行中，`native-prepare` / `native-train`）：CubiCasa 扫描图约 1 px = 1 cm，在原图上按 512 小块识别；训练裁块随机缩放 ×0.6–1.6，避免模型记住"门 = 80 px"。识别时 `SEG_WORK_SIZE=None, SEG_TILE=512`。
+- 选定模型后：重新校准尺度 → RQ4 用 `train_heldout.txt` → 测试集第 2 次。
+
 ### 下一步（按顺序）
 1. **继续提高 3D 准确度**（用户优先级）。最大的杠杆是**自训练识别模型**（任务 5.5，RTX 4070 Super）：用训练集全部 4,200 张、更多轮次，目标墙 IoU 0.60→0.7+、门 0.25→0.4+。训练脚本可参考 floor-plan-document-intelligence 仓库的 `scripts/train_segmentation.py`。训练后 RQ4 训练集要换成 SegFormer 没见过的图（重新划分），并重新校准尺度。
    其次是矢量化：房间合并（只找到一半房间）、墙偏厚（占地 IoU 0.51）。
