@@ -47,75 +47,58 @@
 ## 3. 系统流程
 
 ```
-平面图图片
-  │ ① 识别  recognition/segformer.py         SegFormer-B0 → 每个像素分 5 类：背景/房间/墙/门/窗（512×512）
+平面图图片（CubiCasa 风格扫描，约 1 px = 1 cm）
+  │ ① 识别   recognition/segformer.py       自训练 SegFormer，原图分辨率 512 px 切块 → 每像素 5 类：背景/房间/墙/门/窗
+  │          recognition/ocr.py             OCR 读印刷的房间面积（"MH 11,5"）
   ▼
-像素掩码
-  │ ② 矢量化 vectorization/vectorize.py      骨架 + Hough 直线 → 横竖墙线、门洞、窗洞、房间多边形
-  │          vectorization/transform.py     512 像素坐标 → 原图像素坐标
+  │ ② 矢量化 vectorization/vectorize.py     骨架 + Hough → 横竖墙线；门 = 落在墙体核心的门像素；墙厚横向实测；
+  │                                         外墙 = 沿建筑外轮廓（阳台/露台不计入）；删栏杆、家具线；房间 = 外轮廓内 − 墙
   ▼
-"原始平面"（raw plan，像素单位）
-  │ ③ 尺度   bim_generation/scale.py         门宽中位数 ÷ 0.9 m → 像素/米
-  ▼
-  │ ④ 建模   bim_generation/geometry.py      墙中心线 + 厚度，门窗挂到所在墙上（米）
-  │          bim_generation/viewer_export.py → 网页 3D 数据
-  │          bim_generation/ifc_export.py    → IFC4 BIM 文件
-  ▼
-  │ ⑤ 算量   takeoff_cost/quantities.py      墙长/墙面积/体积、门窗数量与面积、地面面积
-  │   计价   takeoff_cost/cost.py            × 单价（config.UNIT_RATES）
-  ▼
-  │ ⑥ 展示   web/                            静态演示页 + 现场上传演示（Flask）
-  │ 评估     evaluation/                     与 CubiCasa5K 标准答案对比、误差归因、AACE、出图
-  │ 复核     evaluation/error_model.py       运行时信号 → 预测每张图的造价误差 → 复核曲线（RQ4）
+  │ ③ 尺度   bim_generation/scale.py        门宽 + 外墙厚 + 内墙厚（+ 房间面积标注）融合，验证集校准 → 像素/米
+  │ ④ 建模   bim_generation/geometry.py     米制模型 → viewer_export.py（网页 3D）、ifc_export.py（IFC4）
+  │ ⑤ 算量   takeoff_cost/                  墙长/墙面积、门窗、地面面积 × 单价
+  │ ⑥ 复核   review/                        运行时信号 → 误差模型 → "低/中/高风险"提示（RQ4）
+  │ ⑦ 展示   web/                           原图 | 识别效果 | 3D 三栏 + 工程量/造价 + 复核提示；Flask 现场上传
+  │ 评估     evaluation/                    条件 A–E、BIM 几何指标、总/净造价偏差、AACE、校准、模型对比、出图
 ```
 
 ### 目录结构（每个文件干什么）
 
 ```
 floorplan2bim/
-├── PROJECT_PLAN.md            ← 本文件：目标、决策、任务、验收标准、报告与展示大纲
-├── CLAUDE.md                  ← 给 Claude Code 的工作约定
-├── README.md                  ← 快速上手命令
-├── requirements.txt
-├── config.py                  ← 所有参数与假设（层高、门宽、单价、AACE 区间……）只在这里改
-├── pipeline.py                ← 一张图/一个 SVG 跑完整流程：run_image / run_svg / save_plan
-│
-├── recognition/               ① 识别
-│   └── segformer.py           加载预训练模型、letterbox 到 512、推理、彩色叠加图
-├── vectorization/             ② 矢量化
-│   ├── vectorize.py           掩码 → 墙/门/窗/房间（第一版，本周重点改进）
-│   ├── svg_io.py              读 CubiCasa model.svg（标准答案）、写 SVG、把平面栅格化成掩码
-│   └── transform.py           512 坐标 ↔ 原图坐标
-├── bim_generation/            ③④ 尺度与建模
-│   ├── scale.py               门宽 → 像素/米（本周要加 OCR 与融合）
-│   ├── geometry.py            原始平面 → 米制模型（墙中心线、厚度、门窗位置）
-│   ├── viewer_export.py       米制模型 → 网页 3D 数据（墙体分块、门扇、玻璃、房间）
-│   └── ifc_export.py          米制模型 → IFC4（IfcWall/Opening/Door/Window/Space/Slab + 工程量属性）
-├── takeoff_cost/              ⑤ 算量计价
-│   ├── quantities.py          算量规则（见文件头注释，报告里照抄规则说明）
-│   └── cost.py                工程量 × 单价
-├── evaluation/                评估与出图
-│   ├── evaluate_cubicasa.py   核心实验：条件 A–E、IoU、尺度误差 → results.csv / summary.json
-│   ├── aace.py                误差分布对照 AACE 估算等级
-│   ├── error_model.py         RQ4：误差预测模型、模型选择、复核曲线
-│   ├── error_propagation_demo.py  在测试平面上模拟各类识别错误对造价的影响
-│   └── make_figures.py        报告图表 → outputs/figures/
-├── web/                       ⑥ 展示
-│   ├── template.html          网页模板（three.js 3D、工程量表、造价、误差预演）
-│   ├── build_page.py          把 outputs/plans/* 打包成 outputs/web/index.html
-│   └── app.py                 现场演示：上传图片 → 实时生成 3D 与造价（Flask）
-├── samples/
-│   ├── make_sample_svg.py     生成合成测试平面 samples/sample_plan/model.svg（两室一厅，100 单位=1 m）
-│   └── demo_images/           5 张真实 CubiCasa 平面图（512 px 副本），完整数据到位前用于演示
-├── scripts/
-│   ├── run_pipeline.py        命令行：一张图或一个 SVG → outputs/plans/<name>/
-│   └── build_demo.py          一条命令生成演示页
-├── data/                      cubicasa5k/（不提交，约 5 GB，各自下载）
-├── models/                    （提交）segformer_best.pt
-└── outputs/                   （提交）plans/、evaluation/、figures/、web/
+├── PROJECT_PLAN.md / CLAUDE.md / README.md
+├── config.py                  ← 所有参数与假设（层高、单价、尺度校准、识别设置、AACE 区间……）只在这里改
+├── pipeline.py                ← 一张图/一个 SVG 跑完整流程：run_image / run_svg / save_plan / plan_views
+├── recognition/
+│   ├── segformer.py           加载模型（记录 B0/B2 结构）、原图切块推理、置信度信号
+│   ├── train_segformer.py     微调：512 整图 / 原图裁块（随机缩放）；训练集划分见 outputs/rq4/
+│   └── ocr.py                 RapidOCR 读房间面积标注
+├── vectorization/
+│   ├── vectorize.py           掩码 → 墙/门/窗/房间（参数随工作尺寸缩放）
+│   ├── svg_io.py              读 CubiCasa model.svg（可按楼层）、写 SVG、栅格化
+│   └── transform.py           工作图坐标 ↔ 原图坐标
+├── bim_generation/
+│   ├── scale.py               多方法尺度估计与融合（先验来自训练集，校准来自验证集）
+│   ├── geometry.py / viewer_export.py / ifc_export.py
+├── takeoff_cost/              quantities.py（算量规则）、cost.py
+├── review/                    signals.py（22 个运行时信号）、risk.py（复核提示）
+├── evaluation/
+│   ├── evaluate_cubicasa.py   核心实验：条件 A–E、IoU、BIM 几何、尺度、运行时信号（--mask-cache 可复用识别结果）
+│   ├── check_ground_truth.py  0.3 对齐与比例验证
+│   ├── priors_from_train.py / calibrate_scale.py   尺度先验与校准
+│   ├── compare_models.py      模型/版本对比（总偏差 = 决策指标）
+│   ├── train_unseen.py        复现公开模型的训练抽样 → RQ4 用的未见过的训练图
+│   ├── error_model.py         RQ4：误差模型、复核曲线、保存 models/error_model.joblib
+│   ├── recost.py              换单价重算、单价敏感性
+│   ├── aace.py / make_figures.py / report_summary.py / diag_door_scale.py
+│   └── error_propagation_demo.py  早期误差预演（合成平面）
+├── web/                       template.html、build_page.py、app.py
+├── samples/                   合成测试平面、5 张演示图
+├── scripts/                   run_pipeline.py、build_demo.py
+├── models/                    segformer_native.pt（在用）、segformer_best.pt（公开模型）
+├── data/                      cubicasa5k/、seg_cache/（均不提交）
+└── outputs/                   基线、各次验证集对比、checks、priors、rq4、plans、web
 ```
-
----
 
 ## 4. 已确定的关键决策
 
@@ -143,13 +126,12 @@ floorplan2bim/
 - **SVG 比例：100 个单位 = 1 米**（来自 TakeoffLens 项目的报告，需在任务 0.3 中验证）。官方加载器把 SVG 坐标直接画在 `F1_scaled.png` 上，所以 `F1_scaled.png` 的 1 像素应当 = 1 SVG 单位 = 1 cm（同样要在 0.3 中验证）。
 - 注意：一张图可能包含多层（SVG 里多个 `<g class="Floor">`），默认评估时排除。
 
-### 5.2 识别模型（预训练，不训练）
+### 5.2 识别模型
 
-- SegFormer-B0（NVIDIA 2021 提出的 Transformer 语义分割模型），在 CubiCasa5K 上训练，5 类：background / room / wall / door / window。
-- 来源：github.com/alifarzadjamali/floor-plan-document-intelligence（MIT 许可），文件 `results/segmentation/phase2_dev/checkpoints/best.pt`，44.8 MB，sha256 `12fa671d…2bf7`，已提交为 `models/segformer_best.pt`。
-- 作者公布的测试集指标（400 张）：room IoU 0.83；wall IoU 0.53（召回 0.85，精度 0.59，偏多判）；door IoU 0.20（开启弧线、楼梯符号常被判成门）；window IoU 0.41。
-- 该模型的训练设置：只用了 1,200 张训练图、18 轮、整图缩到 512 px。
-- 加载方式：用 `SegformerConfig(num_labels=5)`（默认即 MiT-b0）本地重建结构，再 `load_state_dict(strict=True)`；不需要访问 Hugging Face。
+- SegFormer（NVIDIA 2021 提出的 Transformer 语义分割模型），5 类：background / room / wall / door / window。
+- **起点（公开模型）**：github.com/alifarzadjamali/floor-plan-document-intelligence（MIT 许可）的 SegFormer-B0，`models/segformer_best.pt`（sha256 `12fa671d…2bf7`）。只用了 1,200 张训练图、18 轮、整图缩到 512 px；作者公布测试集 IoU：房间 0.83、墙 0.53、门 0.20、窗 0.41。该模型是在官方验证集上挑选的。
+- **自训练（任务 5.5，`recognition/train_segformer.py`）**：3,000 张训练图（含公开模型用过的 1,200 张），标注用我们的栅格化（门 = 墙上的门洞）。512 整图微调 → `segformer_ours.pt`（未提交）；**原图分辨率裁块训练 → `models/segformer_native.pt`（当前使用）**；SegFormer-B2 原图训练进行中（`segformer_native_b2.pt`）。
+- 加载：检查点里记录网络结构（`model_config`）；没有记录的按 B0 重建。
 
 ### 5.3 演示用小图
 
@@ -422,40 +404,8 @@ floorplan2bim/
 | 识别 IoU 墙/门/窗/房间 | 0.60/0.25/0.48/0.79 | 不变（未训练模型） |
 
 ### 当前代码状态（注意）
-- `vectorization/vectorize.py` 是**清理后**版本（共线缺口按门像素补门/短缺口接上、合并容差随墙厚、删除悬空短墙），因为它对 3D 更好（C 5.8→5.1，房间 0.45→0.50），代价是 D 造价 8.5→9.5%。消融结果：`outputs/evaluation_val_vec0`（清理前）、`vec1`（全部）、`vecA/B/C`。
-- **`config.SCALE_CALIBRATED` 是按清理前的矢量化校准的**，矢量化定稿后要重新校准：`python evaluation/evaluate_cubicasa.py --split val --all-floors --examples 0 --out outputs/evaluation_val_final` → `python evaluation/calibrate_scale.py outputs/evaluation_val_final` → 把结果抄进 config → 再跑一次验证集确认。
-
-### 2026-10-31 补充：原图测量与"问题在不在模型"
-- 新增原图测量（`bim_generation/scale.py` 的 `doors_img`、`ext_walls_img`）：模型给位置，回原图按墨迹量门宽/墙厚。系统性偏差消失（门 0.77 m，接近真值 0.80），单层尺度误差 11.5% → 10.7%，多层偏差明显减小；`config.SCALE_CALIBRATED` 已按 `outputs/evaluation_val_fullres` 重新校准（全部五种 + OCR）。**E 的新数字还没跑**（验证集运行被中断）。
-- 诊断（`python evaluation/diag_door_scale.py`，验证集单层）：门宽推尺度的离散度——标准答案的门 5.3%；**标准答案掩码 → 我们的矢量化 5.6%**；**SegFormer → 我们的矢量化 13.4%**。结论：矢量化不是问题，**多出的约 8 个百分点来自识别模型** → 训练模型值得做。另：原图测量在干净输入上反而更差（9.5%），测量规则会被剖面线/文字/门扇干扰，有改进空间。
-
-### 2026-10-31 自训练识别模型（任务 5.5 进行中）
-- 脚本 `recognition/train_segformer.py`。训练集：原模型见过的 1,200 张 + 另抽 1,800 张（共 3,000，`outputs/rq4/train_ours.txt`）；剩余 1,200 张两个模型都没见过，留给 RQ4（`outputs/rq4/train_heldout.txt`）。标注用我们自己的栅格化（门 = 墙上的门洞）。
-- **512 微调**（`models/segformer_ours.pt`，从公开权重继续训 30 轮，最好第 27 轮）：验证集整条流程对比（`python evaluation/compare_models.py outputs/evaluation_val_fullres outputs/evaluation_val_m512`）：
-
-| 单层验证集 | 公开模型 | 512 微调 |
-|---|---|---|
-| IoU 墙 / 门 / 窗 / 房间 | 0.603 / 0.250 / 0.482 / 0.788 | 0.644 / 0.356 / 0.574 / 0.878 |
-| 3D 墙查准 / 查全 / 占地 IoU | 0.896 / 0.929 / 0.509 | 0.906 / 0.957 / 0.541 |
-| 找到的房间比例 | 0.50 | 0.64 |
-| 尺度误差 | 11.6% | 10.0% |
-| E 造价中位误差 / ±20% 内 | 18.6% / 53% | 16.5% / 61% |
-
-- **原图分辨率训练**（进行中，`native-prepare` / `native-train`）：CubiCasa 扫描图约 1 px = 1 cm，在原图上按 512 小块识别；训练裁块随机缩放 ×0.6–1.6，避免模型记住"门 = 80 px"。识别时 `SEG_WORK_SIZE=None, SEG_TILE=512`。
-- **原图分辨率训练结果**（`models/segformer_native.pt`，从 512 模型继续训 12 轮）——整条流程对比（验证集单层，`outputs/evaluation_val_native*`）：
-
-| | 公开模型 | 512 微调 | **原图训练（选定）** |
-|---|---|---|---|
-| 3D 墙查准 / 查全 / 占地 IoU | 0.896 / 0.929 / 0.509 | 0.906 / 0.957 / 0.541 | 0.893 / 0.958 / 0.622 |
-| 找到的房间比例 | 0.50 | 0.64 | 0.60 |
-| 地面面积（D，带符号） | −15.6% | −9.6% | −3.3% |
-| 尺度误差 | 11.6% | 10.0% | 8.4% |
-| E / ±20% 内 | 18.6% / 53% | 16.5% / 61% | 13.4% / 65% |
-
-  **选定原图模型**（`config.SEGFORMER_CKPT`、`SEG_WORK_SIZE=None`、`SEG_TILE=512`）。IoU 在原图口径上算，与 512 口径不可直接比较。
-- **矢量化：开放空间与栏杆**（`vectorization/vectorize.py`）：阳台/露台（边缘四分之一以上直接接外部的房间）不计入建筑外轮廓；两侧都没有封闭房间、一侧是开放空间的墙视为栏杆删除；两端都不相连且短于 10 倍墙厚的墙删除（家具）；墙的闭运算核随工作尺寸放大。效果（原图模型，验证集单层）：C 外墙 −8.0%→+0.5%、内墙 +16.5%→−6.7%、入户门 −50%→0%、C 造价 4.9%→4.0%；D 内墙 +44%→+17%、入户门 −46%→0%、D 造价 8.4%→7.1%、E 13.8%→13.0%；墙查准率 0.893→0.914，查全率 0.960→0.938，房间 0.625→0.600。
-- 未解决：部分图纸画了相邻单元，标准答案只标注一套公寓，多出的墙计为误差（数据集标注范围问题，报告局限）。
-- 选定模型后：重新校准尺度 → RQ4 用 `train_heldout.txt` → 测试集第 2 次。
+- 矢量化与尺度已按原图模型更新：开放空间/栏杆规则、墙闭运算随尺寸放大；`config.SCALE_CALIBRATED` 已按最终系统重新校准（`outputs/evaluation_val_final_cal`，单层尺度误差 7.8%）。
+- 进行中（2026-10-31 晚）：SegFormer-B2 原图训练；矢量化"只保留起分隔作用的墙"规则（`config.VEC_DROP_NONSEPARATING`）在 B0 识别缓存上验证。选型用总偏差（`compare_models.py`）。两者定下后需重新校准尺度，再冻结。
 
 ### 下一步（按顺序）
 1. **继续提高 3D 准确度**（用户优先级）。最大的杠杆是**自训练识别模型**（任务 5.5，RTX 4070 Super）：用训练集全部 4,200 张、更多轮次，目标墙 IoU 0.60→0.7+、门 0.25→0.4+。训练脚本可参考 floor-plan-document-intelligence 仓库的 `scripts/train_segmentation.py`。训练后 RQ4 训练集要换成 SegFormer 没见过的图（重新划分），并重新校准尺度。

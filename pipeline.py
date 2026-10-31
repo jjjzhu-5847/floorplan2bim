@@ -56,13 +56,20 @@ def run_image(image_path, px_per_m=None, model=None, gt_svg=None):
         from recognition.ocr import read_area_labels
         from bim_generation.scale import INK
         ink = np.asarray(Image.fromarray(img).convert("L")) < INK
-        px_per_m, _ = scale_fused(raw, work_scale=seg["transform"][0], labels=read_area_labels(img), ink=ink)
+        labels = read_area_labels(img)
+        px_per_m, est = scale_fused(raw, work_scale=seg["transform"][0], labels=labels, ink=ink)
         src = "door widths, wall thicknesses and printed room areas"
-    return _finish(raw, px_per_m, src, dict(kind="image", source=str(image_path), image=img,
+    res = _finish(raw, px_per_m, src, dict(kind="image", source=str(image_path), image=img,
                                             image512=seg["image512"], mask512=seg["mask512"],
                                             overlay512=overlay(seg["image512"], seg["mask512"]),
                                             raw512=raw512, transform=seg["transform"],
                                             **(_compare(raw, px_per_m, gt_svg) if gt_svg else {})))
+    if src != "given":  # review hint (RQ4) from the same run-time signals the error model was trained on
+        from review.signals import runtime_signals
+        from review.risk import assess
+        res["review"] = assess(runtime_signals(img.shape, seg["mask512"], seg["confidence"], raw, est,
+                                               res["quantities"], res["cost"], n_labels=len(labels)))
+    return res
 
 
 def _compare(raw, px_per_m, gt_svg):
@@ -142,6 +149,8 @@ def save_plan(res, out_dir, name=None, with_ifc=True):
                 scale_source=res["scale_source"])
     if res["kind"] == "image":
         data["images"], data["notes"] = plan_views(res)
+    if res.get("review"):
+        data["review"] = res["review"]
     json.dump(data, open(out / "plan.json", "w"))
     write_svg(res["raw"], out / "plan.svg")
     if with_ifc:

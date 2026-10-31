@@ -86,7 +86,7 @@ def iou(pred, gt, k):
 
 
 def eval_plan(folder, model, save_example=False, root=None, size=config.SEG_WORK_SIZE, tile=config.SEG_TILE,
-              ocr=True):
+              ocr=True, mask_cache=None):
     gt = parse_svg(folder / "model.svg")
     img = np.array(Image.open(folder / "F1_scaled.png").convert("RGB"))
     row = dict(plan=folder.relative_to(Path(root) if root else config.CUBICASA_DIR).as_posix(), n_floors=gt["n_floors"],
@@ -110,7 +110,15 @@ def eval_plan(folder, model, save_example=False, root=None, size=config.SEG_WORK
     raw_c = to_original(vectorize_mask(gt_mask), tf)
     versions["C"] = measure(raw_c, true_ppm)
     row.update({f"C_{k}": v for k, v in wall_geometry(raw_c, gt).items()}, A_n_rooms=len(gt["spaces"]))
-    pred_mask, conf = segment(model, img512, tile, with_conf=True)
+    cache = Path(mask_cache) / (row["plan"].replace("/", "_") + ".png") if mask_cache else None
+    if cache is not None and cache.exists():  # recognition already done: vectorizer work needs no GPU
+        pred_mask, conf = np.array(Image.open(cache)), json.load(open(cache.with_suffix(".json")))
+    else:
+        pred_mask, conf = segment(model(), img512, tile, with_conf=True)
+        if cache is not None:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            Image.fromarray(pred_mask).save(cache)
+            json.dump(conf, open(cache.with_suffix(".json"), "w"))
     for k, name in enumerate(config.SEG_CLASSES):
         row[f"iou_{name}"] = iou(pred_mask, gt_mask, k)
     raw_d = to_original(vectorize_mask(pred_mask), tf)
@@ -179,6 +187,7 @@ def main():
     ap.add_argument("--root", help="dataset root (default config.CUBICASA_DIR)")
     ap.add_argument("--ckpt", help="SegFormer checkpoint (default config.SEGFORMER_CKPT)")
     ap.add_argument("--no-ocr", action="store_true", help="skip OCR of printed room areas (faster; changes only B/E)")
+    ap.add_argument("--mask-cache", help="folder for SegFormer masks: reused if present, written otherwise")
     ap.add_argument("--plans-file", help="list of plan folders in split-file format, e.g. outputs/rq4/train_unseen.txt")
     ap.add_argument("--out", help="output folder (default outputs/evaluation)")
     ap.add_argument("--size", type=int, default=config.SEG_WORK_SIZE or 0,
@@ -192,14 +201,19 @@ def main():
     if a.limit:
         plans = plans[:a.limit]
     print(f"{len(plans)} plans in {a.plans_file or 'split ' + a.split}")
-    model = load_model(a.ckpt) if a.ckpt else load_model()
+    _m = []
+
+    def model():  # loaded on first use, so a run on cached masks never touches the GPU
+        if not _m:
+            _m.append(load_model(a.ckpt) if a.ckpt else load_model())
+        return _m[0]
     rows, failed = [], []
     for i, folder in enumerate(plans):
         try:
             if not a.all_floors and parse_svg(folder / "model.svg")["n_floors"] > 1:
                 continue
             rows.append(eval_plan(folder, model, save_example=len(rows) < a.examples, root=a.root, size=a.size or None,
-                                  tile=a.tile or None, ocr=not a.no_ocr))
+                                  tile=a.tile or None, ocr=not a.no_ocr, mask_cache=a.mask_cache))
         except Exception as e:  # noqa: BLE001
             failed.append(dict(plan=str(folder), error=repr(e), tb=traceback.format_exc(limit=2)))
         if (i + 1) % 25 == 0:

@@ -2,8 +2,9 @@
 
     python recognition/train_segformer.py prepare [768]  # letterbox + rasterize masks -> data/seg_cache/ (~4 min)
     python recognition/train_segformer.py native-prepare  # crops at the original resolution (~10 min)
-    python recognition/train_segformer.py native-train [init.pt]  # -> models/segformer_native.pt; recognise with
-                                                                 # SEG_WORK_SIZE=None, SEG_TILE=512
+    python recognition/train_segformer.py native-train [init] [name] [batch]  # -> models/<name>.pt (default
+        segformer_native); init = a checkpoint, or hf:<repo> for a Hugging Face model, e.g.
+        hf:nvidia/segformer-b2-finetuned-ade-512-512 (SegFormer-B2). Recognise with SEG_WORK_SIZE=None, SEG_TILE=512.
     python recognition/train_segformer.py train [768 [init.pt]]  # fine-tune -> models/segformer_ours[_768].pt (best on val)
 init: checkpoint to start from (default the public checkpoint), e.g. the 512-px model when training at 768.
 Optional size (default 512): training at 768 px keeps doors larger; then recognise at that working size too.
@@ -117,7 +118,7 @@ def evaluate(model, imgs, masks, dev):
     return dict(zip(config.SEG_CLASSES, iou.round(4).tolist())), float(iou[1:].mean())
 
 
-def train(init=None, native=False):
+def train(init=None, native=False, name=None):
     dev = "cuda"
     if native:  # crops on disk (too large for RAM); validation = tiled recognition on original images
         ti, tm = np.load(CACHE / "native_img.npy", mmap_mode="r"), np.load(CACHE / "native_mask.npy", mmap_mode="r")
@@ -130,7 +131,12 @@ def train(init=None, native=False):
     freq = np.bincount(np.asarray(tm[::10]).ravel(), minlength=NC).astype(float)
     w = np.minimum(np.median(freq) / np.maximum(freq, 1), 8.0)
     weights = torch.tensor(w / w.mean(), dtype=torch.float32, device=dev)
-    model = load_model(init, device=dev) if init else load_model(device=dev)
+    if init and init.startswith("hf:"):
+        from transformers import SegformerForSemanticSegmentation
+        model = SegformerForSemanticSegmentation.from_pretrained(init[3:], num_labels=NC,
+                                                                 ignore_mismatched_sizes=True).to(dev)
+    else:
+        model = load_model(init, device=dev) if init else load_model(device=dev)
     model.train()
     opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=0.01)
     epochs = NATIVE_EPOCHS if native else EPOCHS
@@ -141,7 +147,8 @@ def train(init=None, native=False):
     base, base_score = score_fn(model)
     print(f"start (public checkpoint): val IoU {base}  foreground mean {base_score:.4f}", flush=True)
     best, history = base_score, [dict(epoch=0, val_iou=base, fg_mean=base_score)]
-    out = config.MODELS_DIR / ("segformer_native.pt" if native else f"segformer_ours{TAG}.pt")
+    name = name or ("segformer_native" if native else f"segformer_ours{TAG}")
+    out = config.MODELS_DIR / f"{name}.pt"
     for ep in range(1, epochs + 1):
         model.train()
         t0, tot = time.time(), 0.0
@@ -159,9 +166,10 @@ def train(init=None, native=False):
         tag = ""
         if score > best:
             best, tag = score, "  * saved"
-            torch.save({"model_state_dict": model.state_dict(), "epoch": ep, "val_iou": iou}, out)
+            torch.save({"model_state_dict": model.state_dict(), "model_config": model.config.to_dict(),
+                        "epoch": ep, "val_iou": iou}, out)
         print(f"epoch {ep:2d}  loss {tot:8.1f}  val {iou}  fg {score:.4f}  {time.time() - t0:.0f} s{tag}", flush=True)
-    json.dump(history, open(config.MODELS_DIR / (f"segformer_native_history.json" if native else f"segformer_ours{TAG}_history.json"), "w"), indent=1)
+    json.dump(history, open(config.MODELS_DIR / f"{name}_history.json", "w"), indent=1)
     print(f"best foreground mean IoU {best:.4f} (public checkpoint {base_score:.4f}) -> {out}")
 
 
@@ -226,10 +234,13 @@ def evaluate_native(model, folders):
 
 
 if __name__ == "__main__":
+    if sys.argv[1] == "native-train" and len(sys.argv) > 4:
+        BATCH = int(sys.argv[4])
     if len(sys.argv) > 2 and not sys.argv[1].startswith("native"):
         SIZE, TAG = int(sys.argv[2]), f"_{sys.argv[2]}"
     if sys.argv[1].startswith("native"):
         {"native-prepare": native_prepare,
-         "native-train": lambda: train(sys.argv[2] if len(sys.argv) > 2 else None, native=True)}[sys.argv[1]]()
+         "native-train": lambda: train(sys.argv[2] if len(sys.argv) > 2 else None, native=True,
+                                       name=sys.argv[3] if len(sys.argv) > 3 else None)}[sys.argv[1]]()
     else:
         {"prepare": prepare, "train": lambda: train(sys.argv[3] if len(sys.argv) > 3 else None)}[sys.argv[1]]()

@@ -45,6 +45,11 @@ h1{font:700 clamp(24px,3.4vw,34px)/1.1 var(--display);margin:0;text-wrap:balance
 .panel img{width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
 .panel figcaption{font-size:12px;color:var(--muted)}
 .seg.small button{font-size:11.5px;padding:4px 9px}
+.review{padding:10px 14px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;background:var(--panel)}
+.review b{font-weight:600}
+.review.low{border-color:#3d8c5a;background:color-mix(in srgb,#3d8c5a 10%,var(--panel))}
+.review.medium{border-color:#c28a1e;background:color-mix(in srgb,#c28a1e 12%,var(--panel))}
+.review.high{border-color:#b4541f;background:color-mix(in srgb,#b4541f 12%,var(--panel))}
 .duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
 @media (max-width:860px){.duo{grid-template-columns:1fr}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px}
@@ -108,6 +113,8 @@ tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padd
     <div class="seg" id="planSeg"></div>
     <label class="upload" id="uploadBox" hidden><input type="file" id="upload" accept="image/png,image/jpeg"><span id="uploadTxt">Upload a floor plan image</span></label>
   </div>
+
+  <div class="review" id="review" role="status" hidden></div>
 
   <div class="trio" id="trio">
     <figure class="card panel" id="pIn">
@@ -213,6 +220,19 @@ function renderImages(){
 }
 $('recSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ recKind = b.dataset.k; renderImages(); } });
 
+// ---------- review hint (RQ4 error model)
+function renderReview(){
+  const r = plan.review, el = $('review');
+  el.hidden = !r;
+  if (!r) return;
+  const e = Math.round(r.expected_abs_error_pct);
+  const msg = {low: `<b>Low risk.</b> The takeoff and cost can be used as computed (expected cost error about ±${e}%).`,
+               medium: `<b>Medium risk.</b> Spot-check the scale and the interior walls before relying on the numbers (expected cost error about ±${e}%).`,
+               high: `<b>High risk — have an estimator check this plan.</b> The run-time signals look like plans whose automatic estimate was far off (expected cost error about ±${e}%).`};
+  el.className = 'review ' + r.level;
+  el.innerHTML = msg[r.level];
+}
+
 function renderTables(){
   const Q = plan.quantities, C = plan.cost;
   const rows = [
@@ -316,6 +336,6 @@ if (window.THREE && THREE.OrbitControls) {
   labelsEl.innerHTML = '<span style="left:50%;top:50%">The 3D library did not load. The tables still show the takeoff.</span>';
 }
 
-function renderPlan(){ renderTables(); rebuild3D(); }
+function renderPlan(){ renderTables(); renderReview(); rebuild3D(); }
 renderPlan();
 </script>

@@ -7,6 +7,9 @@ footprint IoU, rooms found), cost error of D, and the cost error of the full sys
 that model. Each model measures doors and walls with its own bias, so its scale is calibrated on these plans
 (constant per method, fused with weights 1 / spread^2) and E is derived from D's quantities: lengths, wall areas and
 window area scale with 1/px_per_m, floor area with its square, counts do not change.
+Two cost errors, as in estimating practice: NET = (our total / reference total - 1), where over- and
+under-estimated items offset each other; GROSS = sum over items of |our quantity - reference quantity| x unit rate,
+over the reference total - no offsetting, so every wrong quantity counts. GROSS is the decision metric.
 """
 import sys
 from pathlib import Path
@@ -20,6 +23,14 @@ from bim_generation.scale import METHODS  # noqa: E402
 from takeoff_cost.cost import cost  # noqa: E402
 
 LINEAR = ("ext_wall_net_area_m2", "int_wall_net_area_m2", "window_area_m2")
+ITEMS = {"ext_wall_net_area_m2": "ext_wall_m2", "int_wall_net_area_m2": "int_wall_m2", "floor_area_m2": "floor_m2",
+         "doors_interior": "door_int_ea", "doors_entry": "door_entry_ea", "window_area_m2": "window_m2"}
+
+
+def gross(q, ref):
+    """Gross cost error (%): every item's absolute quantity error priced, over the reference total."""
+    r = config.UNIT_RATES
+    return sum(abs(q[k] - ref[k]) * r[v] for k, v in ITEMS.items()) / sum(ref[k] * r[v] for k, v in ITEMS.items()) * 100
 
 
 def derived_e(d):
@@ -38,13 +49,16 @@ def derived_e(d):
     ok = np.isfinite(L)
     ppm = np.exp(np.where(ok, L * W, 0).sum(0) / np.where(ok, W, 0).sum(0))
     r = true / ppm
-    errs, scale = [], (ppm / true - 1) * 100
+    errs, gross_e, gross_d, scale = [], [], [], (ppm / true - 1) * 100
     for i, (_, row) in enumerate(d.iterrows()):
         q = {k: row[f"D_{k}"] * r[i] for k in LINEAR}
         q.update(floor_area_m2=row["D_floor_area_m2"] * r[i] ** 2, doors_interior=row["D_doors_interior"],
                  doors_entry=row["D_doors_entry"])
+        ref = {k: row[f"A_{k}"] for k in ITEMS}
         errs.append((cost(q)["TOTAL"] / row["A_cost"] - 1) * 100)
-    return np.array(errs), scale
+        gross_e.append(gross(q, ref))
+        gross_d.append(gross({k: row[f"D_{k}"] for k in ITEMS}, ref))
+    return np.array(errs), scale, np.array(gross_e), np.array(gross_d)
 
 
 def main(runs):
@@ -52,14 +66,15 @@ def main(runs):
     for run in runs:
         d = pd.read_csv(Path(run) / "results.csv")
         d = d[(d.n_floors == 1) & d.D_cost_err_pct.notna()]
-        e, s = derived_e(d)
+        e, s, ge, gd = derived_e(d)
         rows.append({"run": Path(run).name, "n": len(d),
                      "IoU wall": d.iou_wall.mean(), "IoU door": d.iou_door.mean(), "IoU window": d.iou_window.mean(),
                      "IoU room": d.iou_room.mean(), "wall P": d.D_wall_precision.median(),
                      "wall R": d.D_wall_recall.median(), "wall IoU": d.D_wall_iou.median(),
                      "rooms found": (d.D_n_rooms / d.A_n_rooms).median(),
-                     "D cost |err|": d.D_cost_err_pct.abs().median(), "scale |err|": np.nanmedian(np.abs(s)),
-                     "E cost |err|": np.nanmedian(np.abs(e)), "E within 20%": np.nanmean(np.abs(e) <= 20) * 100})
+                     "D net |err|": d.D_cost_err_pct.abs().median(), "D gross": np.nanmedian(gd),
+                     "scale |err|": np.nanmedian(np.abs(s)), "E gross": np.nanmedian(ge),
+                     "E net |err|": np.nanmedian(np.abs(e)), "E within 20%": np.nanmean(np.abs(e) <= 20) * 100})
     t = pd.DataFrame(rows).set_index("run").T
     print(t.round(3).to_string())
 

@@ -24,14 +24,17 @@ _MODEL = None
 
 
 def load_model(path=config.SEGFORMER_CKPT, device=None):
-    """Rebuild SegFormer-B0 (MiT-b0 defaults) with 5 labels and load the checkpoint."""
+    """Rebuild the network and load the checkpoint. Our checkpoints store their architecture ("model_config",
+    e.g. SegFormer-B2); the public one does not and is SegFormer-B0 (MiT-b0 defaults) with 5 labels."""
     global _MODEL
     if _MODEL is not None:
         return _MODEL
     if not Path(path).exists():
         raise FileNotFoundError(f"{path} not found - it is in the repo, run: git pull")
-    model = SegformerForSemanticSegmentation(SegformerConfig(num_labels=len(config.SEG_CLASSES)))
     state = torch.load(path, map_location="cpu", weights_only=False)
+    cfg = (SegformerConfig.from_dict(state["model_config"]) if "model_config" in state
+           else SegformerConfig(num_labels=len(config.SEG_CLASSES)))
+    model = SegformerForSemanticSegmentation(cfg)
     model.load_state_dict(state["model_state_dict"], strict=True)
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     _MODEL = model.to(device).eval()

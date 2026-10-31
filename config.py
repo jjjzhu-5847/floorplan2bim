@@ -54,6 +54,7 @@ VEC_DOOR_GAP_PX = (10, 60)     # gap length between collinear wall runs that may
 VEC_MIN_WALL_PX = 6            # drop wall runs shorter than this
 VEC_MIN_ROOM_PX = 200          # drop room regions smaller than this (pixel area)
 VEC_ROOM_MODE = "footprint"      # rooms from room-class pixels ("pixels") or from the building outline ("footprint")
+VEC_DROP_NONSEPARATING = True  # drop interior walls with the same room on both faces (furniture lines)
 
 # ---------------------------------------------------------------- cost
 # PLACEHOLDER unit rates (USD). Replace with RSMeans or another cited source (task 3.1).

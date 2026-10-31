@@ -9,7 +9,9 @@ Spearman correlation between predicted risk and actual |error| (triage only need
 Test split, used once: plans are sorted by predicted risk; reviewing the riskiest k% means an estimator checks them,
 the rest are accepted as computed. Reported for each k: median / P90 |error| of the accepted plans and their AACE
 class, against random review and a one-rule baseline (disagreement between the scale methods).
-Outputs (outputs/rq4/): model_selection.csv, review_curve.csv, feature_importance.csv, summary.json
+Outputs (outputs/rq4/): model_selection.csv, review_curve.csv, feature_importance.csv, summary.json;
+the chosen model, refitted on all training plans, is saved to models/error_model.joblib for review/risk.py
+(risk levels: thresholds at the 50th / 80th percentile of the cross-validated training predictions).
 """
 import argparse
 import json
@@ -83,9 +85,9 @@ def main():
     err_te, signed_te = te["E_cost_err_pct"].abs().values, te["E_cost_err_pct"].values
 
     cv = KFold(5, shuffle=True, random_state=0)
-    sel = []
+    sel, cv_pred = [], {}
     for name, m in models().items():
-        pred = cross_val_predict(m, Xtr, ytr, cv=cv)
+        pred = cv_pred[name] = cross_val_predict(m, Xtr, ytr, cv=cv)
         sel.append(dict(model=name, cv_spearman=float(spearmanr(pred, ytr).correlation),
                         cv_mae_log=float(np.mean(np.abs(pred - ytr)))))
     rule_rho = float(spearmanr(tr[RULE].fillna(0), ytr).correlation)
@@ -94,6 +96,10 @@ def main():
     sel.to_csv(OUT / "model_selection.csv", index=False)
     best = sel[~sel.model.str.startswith("rule")].sort_values("cv_spearman", ascending=False).iloc[0].model
     model = models()[best].fit(Xtr, ytr)
+    import joblib
+    joblib.dump(dict(model=model, model_name=best, features=feats, fill=tr[feats].median().to_dict(),
+                     thresholds=tuple(float(v) for v in np.percentile(cv_pred[best], [50, 80]))),
+                config.MODELS_DIR / "error_model.joblib")
 
     risk = model.predict(Xte)
     rng = np.random.default_rng(0)
