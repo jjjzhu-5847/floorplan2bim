@@ -1,0 +1,341 @@
+{
+ "n_plans": 400,
+ "A": {
+  "n": 400,
+  "mean_abs": 0.0,
+  "median_abs": 0.0,
+  "mean_signed": 0.0,
+  "quantities": {
+   "ext_wall_length_m": 0.0,
+   "int_wall_length_m": 0.0,
+   "ext_wall_net_area_m2": 0.0,
+   "int_wall_net_area_m2": 0.0,
+   "floor_area_m2": 0.0,
+   "window_area_m2": 0.0,
+   "doors_interior": 0.0,
+   "doors_entry": 0.0,
+   "windows": 0.0
+  }
+ },
+ "B": {
+  "n": 400,
+  "mean_abs": 17.513430002936357,
+  "median_abs": 14.239575355197642,
+  "mean_signed": 17.159722549928546,
+  "quantities": {
+   "ext_wall_length_m": 13.693441561559016,
+   "int_wall_length_m": 13.693441561558684,
+   "ext_wall_net_area_m2": 13.693441561559062,
+   "int_wall_net_area_m2": 13.69344156155866,
+   "floor_area_m2": 29.26199459230947,
+   "window_area_m2": 13.665066936094906,
+   "doors_interior": 0.0,
+   "doors_entry": 0.0,
+   "windows": 0.0
+  }
+ },
+ "C": {
+  "n": 400,
+  "mean_abs": 12.614734640022531,
+  "median_abs": 9.313786996494951,
+  "mean_signed": 6.141217362340223,
+  "quantities": {
+   "ext_wall_length_m": 34.18537834129304,
+   "int_wall_length_m": 72.11525983080202,
+   "ext_wall_net_area_m2": 35.93743367581273,
+   "int_wall_net_area_m2": 70.70411486893462,
+   "floor_area_m2": 6.588022649131448,
+   "window_area_m2": 2.2562004023908955,
+   "doors_interior": 85.71428571428572,
+   "doors_entry": 50.0,
+   "windows": 0.0
+  }
+ },
+ "D": {
+  "n": 400,
+  "mean_abs": 12.868396617709873,
+  "median_abs": 9.969199366114523,
+  "mean_signed": 1.3461215118896452,
+  "quantities": {
+   "ext_wall_length_m": 24.983267537505576,
+   "int_wall_length_m": 45.504795705407204,
+   "ext_wall_net_area_m2": 23.41056150284662,
+   "int_wall_net_area_m2": 45.08776125717471,
+   "floor_area_m2": 23.935167765998628,
+   "window_area_m2": 22.688014003024783,
+   "doors_interior": 80.0,
+   "doors_entry": 50.0,
+   "windows": 28.57142857142858
+  }
+ },
+ "E": {
+  "n": 387,
+  "mean_abs": 36.744217019895345,
+  "median_abs": 29.81887246177415,
+  "mean_signed": -17.82776642105824,
+  "quantities": {
+   "ext_wall_length_m": 22.876840735002247,
+   "int_wall_length_m": 64.54633155533645,
+   "ext_wall_net_area_m2": 24.589175020043918,
+   "int_wall_net_area_m2": 63.87083145872615,
+   "floor_area_m2": 62.88101523933558,
+   "window_area_m2": 27.280809016184865,
+   "doors_interior": 80.0,
+   "doors_entry": 50.0,
+   "windows": 28.57142857142857
+  }
+ },
+ "aace_full_system": {
+  "n": 387,
+  "p10": -56.214147391700564,
+  "p50": -26.16159000130406,
+  "p90": 15.473261210935952,
+  "best_class": null,
+  "share_within": {
+   "5": 0.8191214470284238,
+   "4": 0.524547803617571,
+   "3": 0.3385012919896641,
+   "2": 0.24289405684754523,
+   "1": 0.13953488372093023
+  }
+ },
+ "mean_iou": {
+  "background": 0.8908008691973949,
+  "room": 0.7756679627143303,
+  "wall": 0.5791734897584656,
+  "door": 0.23348827298930844,
+  "window": 0.44922984539554905
+ },
+ "scale_err_pct_median_abs": {
+  "gt_doors": 12.06639569863016,
+  "pred_doors": 43.32465277777777
+ },
+ "by_storeys": {
+  "single": {
+   "n_plans": 319,
+   "A": {
+    "n": 319,
+    "mean_abs": 0.0,
+    "median_abs": 0.0,
+    "mean_signed": 0.0,
+    "quantities": {
+     "ext_wall_length_m": 0.0,
+     "int_wall_length_m": 0.0,
+     "ext_wall_net_area_m2": 0.0,
+     "int_wall_net_area_m2": 0.0,
+     "floor_area_m2": 0.0,
+     "window_area_m2": 0.0,
+     "doors_interior": 0.0,
+     "doors_entry": 0.0,
+     "windows": 0.0
+    }
+   },
+   "B": {
+    "n": 319,
+    "mean_abs": 17.310076417215036,
+    "median_abs": 13.92419613392284,
+    "mean_signed": 16.95329959285597,
+    "quantities": {
+     "ext_wall_length_m": 13.665066936095084,
+     "int_wall_length_m": 13.66506693609466,
+     "ext_wall_net_area_m2": 13.66506693609515,
+     "int_wall_net_area_m2": 13.665066936094616,
+     "floor_area_m2": 29.19747441586946,
+     "window_area_m2": 13.647128506239525,
+     "doors_interior": 0.0,
+     "doors_entry": 0.0,
+     "windows": 0.0
+    }
+   },
+   "C": {
+    "n": 319,
+    "mean_abs": 13.133628208214331,
+    "median_abs": 9.68661599244578,
+    "mean_signed": 6.370300094501459,
+    "quantities": {
+     "ext_wall_length_m": 35.219575731460274,
+     "int_wall_length_m": 70.74172169117814,
+     "ext_wall_net_area_m2": 36.889989390879684,
+     "int_wall_net_area_m2": 69.72863777550153,
+     "floor_area_m2": 6.242738665457193,
+     "window_area_m2": 2.038540044997539,
+     "doors_interior": 83.33333333333334,
+     "doors_entry": 50.0,
+     "windows": 0.0
+    }
+   },
+   "D": {
+    "n": 319,
+    "mean_abs": 12.919194821820463,
+    "median_abs": 9.724404474980453,
+    "mean_signed": 2.864804104576493,
+    "quantities": {
+     "ext_wall_length_m": 26.867086595061295,
+     "int_wall_length_m": 45.03273783597799,
+     "ext_wall_net_area_m2": 27.330250016834135,
+     "int_wall_net_area_m2": 43.79149588769764,
+     "floor_area_m2": 22.79850622792847,
+     "window_area_m2": 21.133499343379757,
+     "doors_interior": 80.0,
+     "doors_entry": 50.0,
+     "windows": 33.33333333333333
+    }
+   },
+   "E": {
+    "n": 307,
+    "mean_abs": 34.64397652808851,
+    "median_abs": 26.53638991105922,
+    "mean_signed": -10.983922439927683,
+    "quantities": {
+     "ext_wall_length_m": 21.040283826307782,
+     "int_wall_length_m": 62.20277809124024,
+     "ext_wall_net_area_m2": 21.99751321467025,
+     "int_wall_net_area_m2": 62.2930361570992,
+     "floor_area_m2": 59.79556604894227,
+     "window_area_m2": 26.963754337464053,
+     "doors_interior": 79.47368421052632,
+     "doors_entry": 50.0,
+     "windows": 33.33333333333333
+    }
+   },
+   "aace_full_system": {
+    "n": 307,
+    "p10": -47.768995664941606,
+    "p50": -22.060376785696256,
+    "p90": 21.90479521591606,
+    "best_class": 5,
+    "share_within": {
+     "5": 0.8957654723127035,
+     "4": 0.5993485342019544,
+     "3": 0.38762214983713356,
+     "2": 0.2671009771986971,
+     "1": 0.15960912052117263
+    }
+   },
+   "mean_iou": {
+    "background": 0.8898205946370178,
+    "room": 0.7881293740106368,
+    "wall": 0.603231880538211,
+    "door": 0.25014426353685193,
+    "window": 0.48170906945390873
+   },
+   "scale_err_pct_median_abs": {
+    "gt_doors": 12.06666666666668,
+    "pred_doors": 36.9140625
+   }
+  },
+  "multi": {
+   "n_plans": 81,
+   "A": {
+    "n": 81,
+    "mean_abs": 0.0,
+    "median_abs": 0.0,
+    "mean_signed": 0.0,
+    "quantities": {
+     "ext_wall_length_m": 0.0,
+     "int_wall_length_m": 0.0,
+     "ext_wall_net_area_m2": 0.0,
+     "int_wall_net_area_m2": 0.0,
+     "floor_area_m2": 0.0,
+     "window_area_m2": 0.0,
+     "doors_interior": 0.0,
+     "doors_entry": 0.0,
+     "windows": 0.0
+    }
+   },
+   "B": {
+    "n": 81,
+    "mean_abs": 18.314291655345013,
+    "median_abs": 14.584306130263446,
+    "mean_signed": 17.97267222037486,
+    "quantities": {
+     "ext_wall_length_m": 13.72181618702295,
+     "int_wall_length_m": 13.721816187022707,
+     "ext_wall_net_area_m2": 13.721816187022974,
+     "int_wall_net_area_m2": 13.721816187022707,
+     "floor_area_m2": 29.32651476874948,
+     "window_area_m2": 13.72181618702264,
+     "doors_interior": 0.0,
+     "doors_entry": 0.0,
+     "windows": 0.0
+    }
+   },
+   "C": {
+    "n": 81,
+    "mean_abs": 10.571190834427666,
+    "median_abs": 6.318725809661341,
+    "mean_signed": 5.239027343087948,
+    "quantities": {
+     "ext_wall_length_m": 32.24389251491322,
+     "int_wall_length_m": 77.31327285887673,
+     "ext_wall_net_area_m2": 34.29386192238504,
+     "int_wall_net_area_m2": 75.93270729189824,
+     "floor_area_m2": 9.530180707447244,
+     "window_area_m2": 3.298134107343609,
+     "doors_interior": 88.88888888888889,
+     "doors_entry": 66.66666666666667,
+     "windows": 0.0
+    }
+   },
+   "D": {
+    "n": 81,
+    "mean_abs": 12.668339492879259,
+    "median_abs": 11.433650601656797,
+    "mean_signed": -4.634863019803003,
+    "quantities": {
+     "ext_wall_length_m": 16.251240976645008,
+     "int_wall_length_m": 49.68314212622165,
+     "ext_wall_net_area_m2": 15.637591411795725,
+     "int_wall_net_area_m2": 49.81604183306497,
+     "floor_area_m2": 29.35668014144991,
+     "window_area_m2": 26.800140743353506,
+     "doors_interior": 85.71428571428572,
+     "doors_entry": 50.0,
+     "windows": 21.42857142857142
+    }
+   },
+   "E": {
+    "n": 80,
+    "mean_abs": 44.80388990720411,
+    "median_abs": 48.18129930149291,
+    "mean_signed": -44.09101769864674,
+    "quantities": {
+     "ext_wall_length_m": 37.91732525713027,
+     "int_wall_length_m": 73.98806783762666,
+     "ext_wall_net_area_m2": 41.04906223112812,
+     "int_wall_net_area_m2": 73.05713171089235,
+     "floor_area_m2": 79.53366919701469,
+     "window_area_m2": 32.218534190308134,
+     "doors_interior": 85.71428571428572,
+     "doors_entry": 46.42857142857143,
+     "windows": 21.825396825396822
+    }
+   },
+   "aace_full_system": {
+    "n": 80,
+    "p10": -67.33281472994108,
+    "p50": -48.18129930149291,
+    "p90": -11.900159031770698,
+    "best_class": null,
+    "share_within": {
+     "5": 0.525,
+     "4": 0.2375,
+     "3": 0.15,
+     "2": 0.15,
+     "1": 0.0625
+    }
+   },
+   "mean_iou": {
+    "background": 0.8946614566635712,
+    "room": 0.7265915404486288,
+    "wall": 0.48442501249008624,
+    "door": 0.16789245836379763,
+    "window": 0.3213178395360833
+   },
+   "scale_err_pct_median_abs": {
+    "gt_doors": 12.066124730593641,
+    "pred_doors": 80.85774739583333
+   }
+  }
+ }
+}

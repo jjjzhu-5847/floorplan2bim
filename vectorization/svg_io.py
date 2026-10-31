@@ -36,15 +36,16 @@ def polygon_parts(p):
     return [g for g in getattr(p, "geoms", [p]) if g.geom_type == "Polygon" and g.area > 0]
 
 
-def parse_svg(path):
-    """Returns raw plan dict + 'n_floors'. External walls: from the class name when present,
-    otherwise geometric (walls touching the outline of all walls + rooms)."""
+def parse_svg(path, floor=None):
+    """Returns raw plan dict + 'n_floors'. floor=None reads every storey; floor=k (0-based) reads only the
+    k-th <g class="Floor">, which CubiCasa draws on F{k+1}_scaled.png. External walls: from the class name
+    when present, otherwise geometric (walls touching the outline of all walls + rooms)."""
     doc = minidom.parse(str(path))
-    walls, openings, spaces, n_floors = [], [], [], 0
-    for g in doc.getElementsByTagName("g"):
+    floors = [g for g in doc.getElementsByTagName("g") if g.getAttribute("class").split()[:1] == ["Floor"]]
+    root = doc if floor is None else floors[floor]
+    walls, openings, spaces = [], [], []
+    for g in root.getElementsByTagName("g"):
         gid, cls = g.getAttribute("id"), g.getAttribute("class")
-        if cls.split()[:1] == ["Floor"]:
-            n_floors += 1
         if gid == "Wall":
             p = _poly(g)
             if p is not None:
@@ -59,7 +60,7 @@ def parse_svg(path):
                 spaces += [dict(poly=q, type=cls.split()[1]) for q in polygon_parts(p)]
     if walls and not any(w["external"] for w in walls):
         mark_external(walls, spaces)
-    return dict(walls=walls, openings=openings, spaces=spaces, n_floors=max(n_floors, 1))
+    return dict(walls=walls, openings=openings, spaces=spaces, n_floors=max(len(floors), 1))
 
 
 def mark_external(walls, spaces, tol_frac=0.5):

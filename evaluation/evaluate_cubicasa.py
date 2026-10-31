@@ -68,7 +68,7 @@ def iou(pred, gt, k):
 def eval_plan(folder, model, save_example=False, root=None):
     gt = parse_svg(folder / "model.svg")
     img = np.array(Image.open(folder / "F1_scaled.png").convert("RGB"))
-    row = dict(plan=str(folder.relative_to(Path(root) if root else config.CUBICASA_DIR)), n_floors=gt["n_floors"],
+    row = dict(plan=folder.relative_to(Path(root) if root else config.CUBICASA_DIR).as_posix(), n_floors=gt["n_floors"],
                img_h=img.shape[0], img_w=img.shape[1], n_walls_gt=len(gt["walls"]), n_doors_gt=
                sum(o["kind"] == "Door" for o in gt["openings"]))
     true_ppm = config.CUBICASA_UNITS_PER_M

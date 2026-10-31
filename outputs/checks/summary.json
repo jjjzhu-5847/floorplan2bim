@@ -1,0 +1,22 @@
+{
+ "split": "val",
+ "n_plans": 400,
+ "n_floor_images": 496,
+ "ink_on_walls_median": 0.5950018903829488,
+ "ink_elsewhere_median": 0.05090172468663123,
+ "best_shift_is_zero_pct": 48.38709677419355,
+ "best_shift_within_2px_pct": 92.33870967741935,
+ "svg_inside_image_pct": 99.59677419354838,
+ "by_storeys": {
+  "multi": {
+   "n": 177,
+   "ink_on_walls_median": 0.5522578077212371,
+   "best_shift_within_2px_pct": 89.26553672316385
+  },
+  "single": {
+   "n": 319,
+   "ink_on_walls_median": 0.6126561380934461,
+   "best_shift_within_2px_pct": 94.04388714733543
+  }
+ }
+}
