@@ -17,7 +17,7 @@ from vectorization.svg_io import parse_svg, write_svg
 from vectorization.vectorize import vectorize_mask
 from vectorization.transform import to_original
 from bim_generation.geometry import build_model
-from bim_generation.scale import scale_from_doors
+from bim_generation.scale import scale_fused
 from bim_generation.viewer_export import viewer_json
 from bim_generation.ifc_export import to_ifc
 from takeoff_cost.quantities import quantities
@@ -26,7 +26,7 @@ from takeoff_cost.cost import cost
 
 def _finish(raw, px_per_m, scale_source, extra):
     if not px_per_m:
-        raise ValueError("No scale: no doors found. Pass px_per_m explicitly.")
+        raise ValueError("No scale: no doors or walls found. Pass px_per_m explicitly.")
     m = build_model(raw, px_per_m)
     q = quantities(m)
     c = cost(q)
@@ -34,12 +34,12 @@ def _finish(raw, px_per_m, scale_source, extra):
 
 
 def run_svg(svg_path, px_per_m=None):
-    """Ground-truth / hand-made SVG. px_per_m=None -> estimate from doors (use 100 for CubiCasa)."""
+    """Ground-truth / hand-made SVG. px_per_m=None -> estimate from doors and walls (use 100 for CubiCasa)."""
     raw = parse_svg(svg_path)
     src = "given"
     if px_per_m is None:
-        px_per_m, _ = scale_from_doors(raw)
-        src = "door widths"
+        px_per_m, _ = scale_fused(raw, config.SCALE_PRIORS)
+        src = "door widths and wall thicknesses"
     return _finish(raw, px_per_m, src, dict(kind="svg", source=str(svg_path)))
 
 
@@ -52,8 +52,9 @@ def run_image(image_path, px_per_m=None, model=None):
     raw = to_original(raw512, seg["transform"])
     src = "given"
     if px_per_m is None:
-        px_per_m, _ = scale_from_doors(raw)
-        src = "door widths"
+        from recognition.ocr import read_area_labels
+        px_per_m, _ = scale_fused(raw, work_scale=seg["transform"][0], labels=read_area_labels(img))
+        src = "door widths, wall thicknesses and printed room areas"
     return _finish(raw, px_per_m, src, dict(kind="image", source=str(image_path), image=img,
                                             image512=seg["image512"], mask512=seg["mask512"],
                                             overlay512=overlay(seg["image512"], seg["mask512"]),

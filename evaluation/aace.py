@@ -1,8 +1,8 @@
 """Place the system's cost error against AACE estimate classes.
 
 Rule used here (state it in the report): a class is met when the 10th-90th percentile of signed
-cost errors falls inside that class's accuracy range. Ranges are in config.AACE_CLASSES and must
-be checked against AACE RP 18R-97 before they are cited.
+cost errors (an 80% range, as in the classification matrices) falls inside that class's accuracy range.
+Ranges: config.AACE_CLASSES, the building and general construction matrix of ASTM E2516-11 / AACE 56R-08.
 """
 import sys
 from pathlib import Path

@@ -49,23 +49,60 @@ def letterbox(img, size=config.SEG_INPUT_SIZE):
     return canvas, (s, left, top)
 
 
-def segment(model, img512):
-    """img512: HxWx3 uint8 (already letterboxed). Returns HxW uint8 class mask."""
-    x = (img512.astype(np.float32) / 255.0 - MEAN) / STD
+def _logits(model, img):
+    """C x H x W logits at the size of img."""
+    x = (img.astype(np.float32) / 255.0 - MEAN) / STD
     x = torch.from_numpy(np.moveaxis(x, -1, 0)[None].copy()).to(next(model.parameters()).device)
     with torch.no_grad():
         logits = model(pixel_values=x).logits
-        logits = torch.nn.functional.interpolate(logits, size=img512.shape[:2], mode="bilinear",
-                                                 align_corners=False)
-    return logits.argmax(1)[0].cpu().numpy().astype(np.uint8)
+        return torch.nn.functional.interpolate(logits, size=img.shape[:2], mode="bilinear", align_corners=False)[0]
 
 
-def segment_image(path_or_array, model=None):
-    """Full step 1. Returns dict(image512, mask512, transform=(scale, left, top), original_shape)."""
+def _confidence(logits, mask):
+    """How sure the model is about what it found (RQ4 signals): mean top probability and entropy over the pixels
+    it labels as anything but background, and the share of wall/door/window pixels with top probability < 0.6."""
+    p = torch.softmax(torch.as_tensor(logits, dtype=torch.float32), 0).cpu().numpy()
+    top = p.max(0)
+    ent = -(p * np.log(np.clip(p, 1e-8, 1))).sum(0)
+    fg, el = mask > 0, np.isin(mask, [2, 3, 4])
+    return dict(conf_fg=float(top[fg].mean()) if fg.any() else np.nan,
+                entropy_fg=float(ent[fg].mean()) if fg.any() else np.nan,
+                lowconf_elements=float((top[el] < 0.6).mean()) if el.any() else np.nan)
+
+
+def segment(model, img, tile=config.SEG_TILE, with_conf=False):
+    """img: HxWx3 uint8, already letterboxed to the working size. Returns HxW uint8 class mask
+    (and confidence signals if with_conf). tile=None: one pass over the whole image. tile=512: overlapping 512-px
+    tiles (objects keep the size they have at the working size; logits are averaged where tiles overlap)."""
+    h, w = img.shape[:2]
+    if not tile or max(h, w) <= tile:
+        lg = _logits(model, img)
+        mask = lg.argmax(0).cpu().numpy().astype(np.uint8)
+        return (mask, _confidence(lg, mask)) if with_conf else mask
+    step = tile * 3 // 4
+    ys = sorted({*range(0, h - tile, step), h - tile})
+    xs = sorted({*range(0, w - tile, step), w - tile})
+    acc, cnt = None, np.zeros((h, w), np.float32)
+    for y in ys:
+        for x in xs:
+            lg = _logits(model, img[y:y + tile, x:x + tile]).cpu().numpy()
+            if acc is None:
+                acc = np.zeros((lg.shape[0], h, w), np.float32)
+            acc[:, y:y + tile, x:x + tile] += lg
+            cnt[y:y + tile, x:x + tile] += 1
+    lg = acc / cnt
+    mask = lg.argmax(0).astype(np.uint8)
+    return (mask, _confidence(lg, mask)) if with_conf else mask
+
+
+def segment_image(path_or_array, model=None, size=config.SEG_WORK_SIZE, tile=config.SEG_TILE):
+    """Full step 1 at the working size. Returns dict(image512, mask512, transform=(scale, left, top),
+    original_shape); the "512" keys hold the working-size image and mask whatever the working size is."""
     img = path_or_array if isinstance(path_or_array, np.ndarray) else np.array(Image.open(path_or_array).convert("RGB"))
     model = model or load_model()
-    img512, tf = letterbox(img)
-    return dict(image512=img512, mask512=segment(model, img512), transform=tf, original_shape=img.shape[:2])
+    img_w, tf = letterbox(img, size)
+    mask, conf = segment(model, img_w, tile, with_conf=True)
+    return dict(image512=img_w, mask512=mask, transform=tf, original_shape=img.shape[:2], confidence=conf)
 
 
 def overlay(img, mask):

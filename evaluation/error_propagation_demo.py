@@ -54,7 +54,7 @@ def miss(kind, p):
 
 def scale_from_door_mix(r):
     widths = rng.choice([0.8, 0.9, 1.0], size=6, p=[0.35, 0.45, 0.20]) * TRUE_PPM
-    return r, float(np.median(widths)) / config.STD_DOOR_W
+    return r, float(np.median(widths)) / config.SAMPLE_PLAN_DOOR_W
 
 
 def main():

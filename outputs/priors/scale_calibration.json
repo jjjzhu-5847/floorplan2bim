@@ -1,0 +1,104 @@
+{
+ "run": "outputs/evaluation_val_ocr",
+ "fitted_on": "single-storey",
+ "n_fit": 319,
+ "sizes": {
+  "doors": 0.996357421875,
+  "ext_walls": 0.34796875000000005,
+  "int_walls": 0.19878906249999942,
+  "area_labels": 1.0434508737222852
+ },
+ "offsets": {
+  "doors": 0.0,
+  "ext_walls": 0.0,
+  "int_walls": 0.0,
+  "area_labels": 0.0
+ },
+ "spread": {
+  "doors": 0.12354572809158348,
+  "ext_walls": 0.16821957790749908,
+  "int_walls": 0.16574965612104298,
+  "area_labels": 0.1041040563101806
+ },
+ "chosen": "doors + ext walls + area labels",
+ "weights": {
+  "doors": 65.51557148591274,
+  "ext_walls": 35.338403245866175,
+  "int_walls": 0.0,
+  "area_labels": 92.27088723742226
+ },
+ "comparison": [
+  {
+   "variant": "image size only",
+   "coverage_pct": 100.0,
+   "median_abs": 21.546596166556508,
+   "p90_abs": 74.71249173826835,
+   "single_median_abs": 17.71315267680107,
+   "single_signed": -7.336417713152665,
+   "multi_signed": 55.58493060145406
+  },
+  {
+   "variant": "doors only",
+   "coverage_pct": 99.5,
+   "median_abs": 14.326599821615838,
+   "p90_abs": 51.21820694522033,
+   "single_median_abs": 12.354572809158327,
+   "single_signed": -4.440892098500626e-14,
+   "multi_signed": 34.540856832015045
+  },
+  {
+   "variant": "ext_walls only",
+   "coverage_pct": 100.0,
+   "median_abs": 18.99416255051638,
+   "p90_abs": 63.295419576942066,
+   "single_median_abs": 16.821957790749874,
+   "single_signed": 4.440892098500626e-14,
+   "multi_signed": 46.02604400538834
+  },
+  {
+   "variant": "int_walls only",
+   "coverage_pct": 100.0,
+   "median_abs": 18.991943407349243,
+   "p90_abs": 64.7847428686568,
+   "single_median_abs": 16.574965612104265,
+   "single_signed": 4.440892098500626e-14,
+   "multi_signed": 40.365435604403956
+  },
+  {
+   "variant": "doors + ext walls",
+   "coverage_pct": 100.0,
+   "median_abs": 13.961633301921239,
+   "p90_abs": 49.97290100974532,
+   "single_median_abs": 11.79355192194521,
+   "single_signed": -1.7474282364164373,
+   "multi_signed": 39.23615790273027
+  },
+  {
+   "variant": "all three",
+   "coverage_pct": 100.0,
+   "median_abs": 13.39254362590454,
+   "p90_abs": 53.316815411585374,
+   "single_median_abs": 12.069389664929652,
+   "single_signed": -0.920874070404798,
+   "multi_signed": 41.2586381121153
+  },
+  {
+   "variant": "doors + ext walls + area labels",
+   "coverage_pct": 100.0,
+   "median_abs": 13.42073355090228,
+   "p90_abs": 51.38843343152195,
+   "single_median_abs": 11.182180703061428,
+   "single_signed": -1.5852235316099805,
+   "multi_signed": 39.23615790273027
+  },
+  {
+   "variant": "all three + area labels",
+   "coverage_pct": 100.0,
+   "median_abs": 12.92594344676718,
+   "p90_abs": 53.920566334264585,
+   "single_median_abs": 11.816882637059667,
+   "single_signed": -1.246580781269091,
+   "multi_signed": 43.06775202981215
+  }
+ ]
+}

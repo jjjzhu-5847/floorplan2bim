@@ -16,14 +16,36 @@ H_WALL = 2.7        # storey / wall height
 H_DOOR = 2.1        # door head height
 SILL = 0.9          # window sill height
 H_WIN_TOP = 2.1     # window head height
-STD_DOOR_W = 0.9    # assumed typical door width, used for scale calibration
+SAMPLE_PLAN_DOOR_W = 0.9  # door width drawn in the synthetic test plan; used only by evaluation/error_propagation_demo.py
 # CubiCasa5K ground truth: model.svg coordinates are 100 units = 1 m (reported by the
 # TakeoffLens project; verify on a few plans, see PROJECT_PLAN.md task 0.3).
 CUBICASA_UNITS_PER_M = 100.0
 
+# ---------------------------------------------------------------- scale calibration (bim_generation/scale.py, task 2.4)
+# Typical sizes (m) from the TRAINING split ground truth, per-plan medians (outputs/priors/train_priors.json):
+# door 0.797 m (spread between plans 5.4%), exterior wall 0.245 m (20.2%), interior wall 0.120 m (16.2%).
+# Weights = 1 / spread^2. Used when the geometry is exact (ground truth, condition B).
+# Printed room areas (OCR) on exact rooms recover the scale within ~2% (5 validation plans checked by hand).
+SCALE_PRIORS = dict(sizes=dict(doors=0.797, ext_walls=0.245, int_walls=0.120, area_labels=1.0),
+                    weights=dict(doors=1 / 0.054 ** 2, ext_walls=1 / 0.202 ** 2, int_walls=1 / 0.162 ** 2,
+                                 area_labels=1 / 0.03 ** 2))
+SCALE_LABEL_MAX_DISAGREEMENT = 0.35  # drop the area-label estimate if it differs from doors/walls by more
+# Effective sizes and weights as our recognition + vectorizer measures them, calibrated on the VALIDATION split
+# (evaluation/calibrate_scale.py). Used for real images (condition E, run_image, live demo).
+# Calibrated 2026-10-31 on single-storey validation plans (outputs/priors/scale_calibration.json, 512-px recognition):
+# our doors measure ~25% wider and walls ~40% thicker than the ground truth (blurred predicted mask); printed room
+# areas (found on 30% of plans) are used where they agree with doors/walls. Chosen fusion: doors + ext walls + area labels
+# (median scale error on single-storey plans 11.2%; doors only 12.4%; image size only 17.7%).
+SCALE_CALIBRATED = dict(sizes=dict(doors=0.996, ext_walls=0.348, int_walls=0.199,
+                                   area_labels=1.043),
+                        weights=dict(doors=65.5, ext_walls=35.3, int_walls=0.0,
+                                     area_labels=92.3))
+
 # ---------------------------------------------------------------- recognition
 SEG_CLASSES = ["background", "room", "wall", "door", "window"]
 SEG_INPUT_SIZE = 512                       # the public checkpoint was trained on 512 x 512
+SEG_WORK_SIZE = 512                        # plans are letterboxed to this size for recognition (task 2.2)
+SEG_TILE = None                            # None: one pass; 512: overlapping 512-px tiles at the working size
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -31,6 +53,7 @@ IMAGENET_STD = (0.229, 0.224, 0.225)
 VEC_DOOR_GAP_PX = (10, 60)     # gap length between collinear wall runs that may be a door
 VEC_MIN_WALL_PX = 6            # drop wall runs shorter than this
 VEC_MIN_ROOM_PX = 200          # drop room regions smaller than this (pixel area)
+VEC_ROOM_MODE = "footprint"      # rooms from room-class pixels ("pixels") or from the building outline ("footprint")
 
 # ---------------------------------------------------------------- cost
 # PLACEHOLDER unit rates (USD). Replace with RSMeans or another cited source (task 3.1).
@@ -44,12 +67,15 @@ UNIT_RATES = {
 }
 UNIT_RATE_SOURCE = "placeholder"
 
-# ---------------------------------------------------------------- AACE (verify against AACE RP 18R-97 before citing)
-# Expected accuracy ranges (low %, high %) - the wide end of each class range.
+# ---------------------------------------------------------------- AACE estimate classes (task 4.2)
+# Building and general construction matrix of ASTM E2516-11 (2024), which is based on AACE International RP 17R-97,
+# 18R-97 and 56R-08 (building and general construction), as tabulated in Alberta Infrastructure, "Classes of
+# Construction Cost Estimates", Design & Technology Series #19 (alberta.ca/system/files/infra-tr-dt-series-19-estimates.pdf),
+# Table 1. Ranges are (low %, high %) at the wide end of each class. The process-industry matrix (18R-97) is wider.
 AACE_CLASSES = {
-    5: (-50, 100),
-    4: (-30, 50),
-    3: (-20, 30),
-    2: (-15, 20),
-    1: (-10, 15),
+    5: (-30, 50),
+    4: (-20, 30),
+    3: (-15, 20),
+    2: (-10, 15),
+    1: (-5, 10),
 }

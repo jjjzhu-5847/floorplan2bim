@@ -39,7 +39,8 @@ def table(runs, names):
             f"{' '.join(f'{c[:4]} {x['mean_iou'][c]:.2f}' for c in ('wall', 'door', 'window', 'room')) if x else '-':>40}"
             for x in gs))
         print("scale |err| median %" + "  ".join(
-            f"   gt doors {x['scale_err_pct_median_abs']['gt_doors']:.1f}  pred doors {x['scale_err_pct_median_abs']['pred_doors']:.1f}"
+            "   " + "  ".join(f"{k} {x['scale_err_pct_median_abs'][k]:.1f}" for k in ("gt_doors", "gt", "pred_doors", "pred")
+                              if k in x["scale_err_pct_median_abs"])
             if x else "-" for x in gs))
         print("AACE (E)            " + "  ".join(
             f"   class {x['aace_full_system']['best_class']}  P10 {x['aace_full_system']['p10']:.0f}%  P90 {x['aace_full_system']['p90']:.0f}%"
