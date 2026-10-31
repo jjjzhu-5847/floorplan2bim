@@ -7,7 +7,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 CUBICASA_DIR = DATA_DIR / "cubicasa5k"          # unzip the Zenodo archive here
-PPI_CSV = DATA_DIR / "ppi" / "ppi_monthly.csv"
 MODELS_DIR = ROOT / "models"
 SEGFORMER_CKPT = MODELS_DIR / "segformer_best.pt"
 OUTPUTS_DIR = ROOT / "outputs"
@@ -44,28 +43,6 @@ UNIT_RATES = {
     "window_m2": 550.0,       # window, per m2
 }
 UNIT_RATE_SOURCE = "placeholder"
-
-# ---------------------------------------------------------------- price forecast
-MATERIAL_SHARE = 0.5   # share of each cost item that is material (rest = labour, held flat)
-PPI_SERIES = {         # FRED id -> description
-    "WPU0811": "Softwood lumber",
-    "WPU137": "Gypsum products",
-    "WPU1333": "Ready-mix concrete",
-    "WPU082": "Millwork",
-    "PCU321911321911": "Wood windows & doors",
-    "WPU10710313": "Metal windows",
-    "WPUIP2311001": "Residential construction inputs",
-}
-# cost item -> price index weights (assumption: US wood-frame construction)
-COST_BASKETS = {
-    "Exterior walls (net face)": {"WPU0811": 0.4, "WPU137": 0.2, "WPUIP2311001": 0.4},
-    "Interior partitions (net face)": {"WPU0811": 0.4, "WPU137": 0.6},
-    "Floor finish": {"WPUIP2311001": 1.0},
-    "Interior doors": {"PCU321911321911": 0.5, "WPU082": 0.5},
-    "Entrance doors": {"PCU321911321911": 0.5, "WPU082": 0.5},
-    "Windows": {"PCU321911321911": 0.5, "WPU10710313": 0.5},
-}
-FORECAST_HORIZON_MONTHS = 12
 
 # ---------------------------------------------------------------- AACE (verify against AACE RP 18R-97 before citing)
 # Expected accuracy ranges (low %, high %) - the wide end of each class range.

@@ -1,0 +1,63 @@
+{
+ "base_cost": 33943,
+ "miss 5% interior walls": {
+  "mean": -1.16,
+  "mae": 1.16,
+  "p5": -5.31,
+  "p95": 0.0
+ },
+ "miss 5% windows": {
+  "mean": -0.69,
+  "mae": 0.69,
+  "p5": -2.75,
+  "p95": 0.0
+ },
+ "miss 5% doors": {
+  "mean": -0.32,
+  "mae": 0.32,
+  "p5": -1.82,
+  "p95": 0.0
+ },
+ "miss 10% interior walls": {
+  "mean": -2.22,
+  "mae": 2.22,
+  "p5": -8.12,
+  "p95": 0.0
+ },
+ "miss 10% windows": {
+  "mean": -1.5,
+  "mae": 1.5,
+  "p5": -4.58,
+  "p95": 0.0
+ },
+ "miss 10% doors": {
+  "mean": -0.67,
+  "mae": 0.67,
+  "p5": -2.72,
+  "p95": 0.0
+ },
+ "miss 20% interior walls": {
+  "mean": -4.3,
+  "mae": 4.3,
+  "p5": -10.87,
+  "p95": 0.0
+ },
+ "miss 20% windows": {
+  "mean": -2.96,
+  "mae": 2.96,
+  "p5": -6.54,
+  "p95": 0.0
+ },
+ "miss 20% doors": {
+  "mean": -1.44,
+  "mae": 1.44,
+  "p5": -4.24,
+  "p95": 0.0
+ },
+ "scale from door widths (0.8/0.9/1.0 mix)": {
+  "mean": 2.38,
+  "mae": 3.33,
+  "p5": -5.37,
+  "p95": 13.04
+ }
+}

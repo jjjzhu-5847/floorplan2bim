@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plan-to-BIM Takeoff</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -81,26 +84,13 @@ tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padd
 .strip figure{margin:0;display:flex;flex-direction:column;gap:6px}
 .strip img{width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
 .strip figcaption{font-size:12px;color:var(--muted)}
-.month{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:860px){.month{grid-template-columns:1fr}}
-.chartbox{overflow-x:auto}
-#band{display:block;width:100%;min-width:420px;height:auto}
-#band text{font:11px var(--mono);fill:var(--muted)}
-.readout{display:flex;flex-direction:column;gap:12px}
-.big{font:700 30px/1.1 var(--display);font-variant-numeric:tabular-nums}
-.range{font:500 13px var(--mono);color:var(--muted)}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
-.kv span:nth-child(odd){color:var(--muted)}
-.kv span:nth-child(even){font-family:var(--mono);text-align:right}
-td.better{color:var(--accent);font-weight:600}
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Floor plan → BIM → takeoff → cost by start month</div>
+    <div class="eyebrow">Floor plan → BIM → takeoff → cost</div>
     <h1>Plan-to-BIM Takeoff</h1>
-    <p class="lede">A floor plan image is segmented by a CV model, turned into walls, doors, windows and rooms, calibrated to metres from door widths, and built into a 3D model. The system then measures quantities and prices them, and shows how the cost could move depending on the month construction starts.</p>
+    <p class="lede">A floor plan image is segmented by a CV model, turned into walls, doors, windows and rooms, calibrated to metres from door widths, and built into a 3D model. The system then measures quantities from the model and prices them.</p>
     <p class="note" id="metaNote"></p>
   </header>
 
@@ -149,26 +139,6 @@ td.better{color:var(--accent);font-weight:600}
     </div>
   </div>
 
-  <div class="card sect" id="monthCard">
-    <h2>When to build <small>material part of the cost follows forecast price indices</small></h2>
-    <div class="month">
-      <div class="chartbox"><svg id="band" viewBox="0 0 640 260" role="img" aria-label="Cost range by construction start month"></svg></div>
-      <div class="readout">
-        <label for="mSlider" class="lbl" style="font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Construction start month</label>
-        <input type="range" id="mSlider" min="0" max="11" value="5">
-        <div><div class="big" id="mCost"></div><div class="range" id="mRange"></div></div>
-        <div class="kv" id="mKv"></div>
-      </div>
-    </div>
-    <p class="foot">Each cost item maps to BLS producer price indices (e.g. partitions: 40% softwood lumber, 60% gypsum). Half of each item's cost is treated as material. Labour is held at today's rate. The line is an ARIMA forecast. The band is the 10th–90th percentile of ARIMA's own past forecast errors, replayed jointly across materials from every historical start point since 2016.</p>
-  </div>
-
-  <div class="card sect" id="fcCard">
-    <h2>Can these prices be forecast? <small id="fcSub">12-month-ahead error, rolling backtest</small></h2>
-    <div style="overflow-x:auto"><table id="fc"></table></div>
-    <p class="foot" id="fcNote"></p>
-  </div>
-
   <div class="card sect" id="errCard">
     <h2>What moves the estimate <small>mean absolute error in total cost, 500 simulated runs each (test plan)</small></h2>
     <div class="bars" id="bars"></div>
@@ -183,7 +153,7 @@ const PAGE = __DATA__;
 const fmt = (v, d=1) => Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-let plan = PAGE.plans[0], monthIdx = 5;
+let plan = PAGE.plans[0];
 
 // ---------- plan picker
 function renderPicker(sel){
@@ -231,50 +201,7 @@ function renderTables(){
   if (plan.real){ $('imIn').src = plan.images.input; $('imSeg').src = plan.images.seg; $('imVec').src = plan.images.vector; }
 }
 
-// ---------- start-month band chart
-function monthLabel(m){ const [y,mo] = m.split('-'); return new Date(+y, +mo-1, 1).toLocaleString('en-US',{month:'short'}) + ' ' + y.slice(2); }
-function renderBand(){
-  $('monthCard').hidden = !plan.band;
-  if (!plan.band) return;
-  const B = plan.band, today = plan.cost.TOTAL, svg = $('band');
-  const W = 640, H = 260, L = 64, R = 14, T = 14, Bm = 34;
-  const lo = Math.min(today, ...B.map(b => b.p10)), hi = Math.max(...B.map(b => b.p90));
-  const pad = (hi - lo) * 0.12, y0 = lo - pad, y1 = hi + pad;
-  const x = i => L + (W - L - R) * (i + 0.5) / B.length, y = v => T + (H - T - Bm) * (1 - (v - y0) / (y1 - y0));
-  const nice = (() => { const span = y1 - y0, step = Math.pow(10, Math.floor(Math.log10(span / 4))); const m = [1,2,2.5,5,10].find(k => span / (k*step) <= 5) * step; return m; })();
-  let g = '';
-  for (let v = Math.ceil(y0 / nice) * nice; v <= y1; v += nice)
-    g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">$${fmt(v/1000, 1)}k</text>`;
-  const area = B.map((b,i) => `${x(i)},${y(b.p90)}`).join(' ') + ' ' + B.slice().reverse().map((b,j) => `${x(B.length-1-j)},${y(b.p10)}`).join(' ');
-  g += `<polygon points="${area}" fill="${css('--accent')}" fill-opacity="0.16"/>`;
-  g += `<line x1="${L}" x2="${W-R}" y1="${y(today)}" y2="${y(today)}" stroke="${css('--muted')}" stroke-dasharray="4 4"/><text x="${W-R}" y="${y(today)-6}" text-anchor="end">today $${fmt(today/1000,1)}k</text>`;
-  g += `<polyline points="${B.map((b,i) => `${x(i)},${y(b.point)}`).join(' ')}" fill="none" stroke="${css('--accent')}" stroke-width="2"/>`;
-  B.forEach((b,i) => { if (i % 2 === 0) g += `<text x="${x(i)}" y="${H-12}" text-anchor="middle">${monthLabel(b.month)}</text>`; });
-  const s = B[monthIdx];
-  g += `<line x1="${x(monthIdx)}" x2="${x(monthIdx)}" y1="${T}" y2="${H-Bm}" stroke="${css('--ink')}" stroke-opacity=".25"/>`;
-  g += `<circle cx="${x(monthIdx)}" cy="${y(s.point)}" r="5" fill="${css('--accent')}" stroke="${css('--panel')}" stroke-width="2"/>`;
-  g += B.map((b,i) => `<rect x="${x(i)-(W-L-R)/B.length/2}" y="${T}" width="${(W-L-R)/B.length}" height="${H-T-Bm}" fill="transparent" data-i="${i}" style="cursor:pointer"/>`).join('');
-  svg.innerHTML = g;
-  $('mSlider').value = monthIdx;
-  $('mCost').textContent = '$' + fmt(s.point, 0);
-  $('mRange').textContent = `80% range $${fmt(s.p10,0)} – $${fmt(s.p90,0)}`;
-  const d = (s.point / today - 1) * 100;
-  $('mKv').innerHTML = `<span>Start month</span><span>${monthLabel(s.month)}</span><span>Cost today (Aug 26)</span><span>$${fmt(today,0)}</span><span>Expected change</span><span>${d >= 0 ? '+' : ''}${d.toFixed(1)}%</span><span>Worst-case (90th pct)</span><span>+${((s.p90/today-1)*100).toFixed(1)}%</span>`;
-}
-$('mSlider').addEventListener('input', e => { monthIdx = +e.target.value; renderBand(); });
-$('band').addEventListener('pointermove', e => { const r = e.target.closest('rect[data-i]'); if (r && +r.dataset.i !== monthIdx){ monthIdx = +r.dataset.i; renderBand(); } });
-
-// ---------- forecast table + error bars (plan independent)
-const F = PAGE.forecast;
-$('fcCard').hidden = !F;
-if (F) {
-$('fc').innerHTML = `<tr><th>Price index</th><th class="n">No-change guess</th><th class="n">ARIMA</th></tr>` +
-  F.per_series.map(r => `<tr><td>${r.name}</td><td class="n${r.naive < r.arima ? ' better' : ''}">${r.naive.toFixed(1)}%</td><td class="n${r.arima < r.naive ? ' better' : ''}">${r.arima.toFixed(1)}%</td></tr>`).join('') +
-  `<tr class="total"><td>All indices, 12 months ahead</td><td class="n">${F.pooled[12].naive.toFixed(1)}%</td><td class="n">${F.pooled[12].arima.toFixed(1)}%</td></tr>`;
-$('fcSub').textContent = `12-month-ahead error, backtest 2016 – ${F.data_end || ''}`;
-{ const win = F.per_series.filter(r => r.arima < r.naive).map(r => r.name), lose = F.per_series.filter(r => r.arima >= r.naive).map(r => r.name);
-  $('fcNote').textContent = `Mean absolute error of the index level 12 months ahead; the better method is highlighted. ARIMA beats the no-change guess for: ${win.join(', ') || 'none'}. It does not for: ${lose.join(', ') || 'none'}. At 3 months ahead: ${F.pooled[3].naive.toFixed(1)}% (no change) vs ${F.pooled[3].arima.toFixed(1)}% (ARIMA). The page therefore shows a cost range, not a single price.`; }
-}
+// ---------- error bars (plan independent)
 const E = PAGE.err;
 $('errCard').hidden = !E;
 if (E) {
@@ -360,9 +287,6 @@ if (window.THREE && THREE.OrbitControls) {
   labelsEl.innerHTML = '<span style="left:50%;top:50%">The 3D library did not load. The tables still show the takeoff.</span>';
 }
 
-function renderPlan(){ renderTables(); renderBand(); rebuild3D(); }
+function renderPlan(){ renderTables(); rebuild3D(); }
 renderPlan();
-const reband = () => renderBand();
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', reband);
-new MutationObserver(reband).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
 </script>

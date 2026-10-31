@@ -1,10 +1,8 @@
-"""Report figures from the evaluation and price outputs. Writes PNGs to outputs/figures/.
+"""Report figures from the evaluation outputs. Writes PNGs to outputs/figures/.
 
     python evaluation/make_figures.py
-Needs: outputs/evaluation/results.csv (evaluate_cubicasa.py), outputs/price_forecast/backtest_summary.json
-(price_forecast/backtest.py). Missing inputs are skipped.
+Needs: outputs/evaluation/results.csv (evaluate_cubicasa.py). Missing inputs are skipped.
 """
-import json
 import sys
 from pathlib import Path
 
@@ -96,27 +94,5 @@ def evaluation_figures():
     save(fig, "fig_iou.png")
 
 
-def price_figures():
-    p = config.OUTPUTS_DIR / "price_forecast" / "backtest_summary.json"
-    if not p.exists():
-        print("skip price figures:", p, "missing")
-        return
-    s = json.load(open(p))
-    sids = list(config.PPI_SERIES)
-    naive = [s["by_series"].get(f"{i}|h12", {}).get("naive", np.nan) for i in sids]
-    arima = [s["by_series"].get(f"{i}|h12", {}).get("arima", np.nan) for i in sids]
-    fig, ax = plt.subplots(figsize=(8, 4))
-    y = np.arange(len(sids))
-    ax.barh(y - .19, naive, .36, color=BLUE_LIGHT, label="No-change guess")
-    ax.barh(y + .19, arima, .36, color=BLUE, label="ARIMA")
-    ax.set_yticks(y, [config.PPI_SERIES[i] for i in sids])
-    ax.invert_yaxis()
-    ax.set_xlabel("12-month-ahead mean absolute error (%)")
-    ax.legend(frameon=False)
-    ax.set_title(f"Forecast backtest, origins 2016 to {s['data_end'][:7]}", loc="left", color=INK)
-    save(fig, "fig_price_backtest.png")
-
-
 if __name__ == "__main__":
     evaluation_figures()
-    price_figures()

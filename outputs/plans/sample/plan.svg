@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000">
+<g class="Model"><g class="Floor"><g class="Floorplan">
+<g class="Space LivingRoom"><polygon points="600.0,450.0 600.0,356.0 594.0,356.0 594.0,344.0 594.0,12.5 12.5,12.5 12.5,444.0 394.0,444.0 406.0,444.0 406.0,450.0 " fill="#dfe7ee"/></g>
+<g class="Space Kitchen"><polygon points="606.0,12.5 606.0,344.0 987.5,344.0 987.5,12.5 " fill="#dfe7ee"/></g>
+<g class="Space Bedroom"><polygon points="12.5,787.5 394.0,787.5 394.0,556.0 394.0,544.0 394.0,456.0 12.5,456.0 " fill="#dfe7ee"/></g>
+<g class="Space Bedroom"><polygon points="656.0,556.0 656.0,787.5 987.5,787.5 987.5,506.0 656.0,506.0 656.0,544.0 " fill="#dfe7ee"/></g>
+<g class="Space Bath"><polygon points="406.0,787.5 644.0,787.5 644.0,556.0 406.0,556.0 " fill="#dfe7ee"/></g>
+<g class="Space Entry"><polygon points="600.0,450.0 406.0,450.0 406.0,456.0 406.0,544.0 644.0,544.0 644.0,506.0 644.0,494.0 656.0,494.0 987.5,494.0 987.5,356.0 606.0,356.0 600.0,356.0 " fill="#dfe7ee"/></g>
+<g id="Wall" class="Wall External"><polygon points="1012.5,-12.5 1012.5,12.5 -12.5,12.5 -12.5,-12.5 " fill="#333"/></g>
+<g id="Wall" class="Wall External"><polygon points="1012.5,-12.5 1012.5,812.5 987.5,812.5 987.5,-12.5 " fill="#333"/></g>
+<g id="Wall" class="Wall External"><polygon points="1012.5,787.5 1012.5,812.5 -12.5,812.5 -12.5,787.5 " fill="#333"/></g>
+<g id="Wall" class="Wall External"><polygon points="12.5,-12.5 12.5,812.5 -12.5,812.5 -12.5,-12.5 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="406.0,444.0 406.0,456.0 -6.0,456.0 -6.0,444.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="406.0,444.0 406.0,806.0 394.0,806.0 394.0,444.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="656.0,494.0 656.0,806.0 644.0,806.0 644.0,494.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="1006.0,494.0 1006.0,506.0 644.0,506.0 644.0,494.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="656.0,544.0 656.0,556.0 394.0,556.0 394.0,544.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="606.0,-6.0 606.0,356.0 594.0,356.0 594.0,-6.0 " fill="#333"/></g>
+<g id="Wall" class="Wall"><polygon points="1006.0,344.0 1006.0,356.0 594.0,356.0 594.0,344.0 " fill="#333"/></g>
+<g id="Window" class="Window"><polygon points="300.0,-12.5 300.0,12.5 100.0,12.5 100.0,-12.5 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="900.0,-12.5 900.0,12.5 750.0,12.5 750.0,-12.5 " fill="#e09a3a"/></g>
+<g id="Door" class="Door"><polygon points="1012.5,400.0 1012.5,500.0 987.5,500.0 987.5,400.0 " fill="#2a78d6"/></g>
+<g id="Window" class="Window"><polygon points="1012.5,600.0 1012.5,720.0 987.5,720.0 987.5,600.0 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="900.0,787.5 900.0,812.5 750.0,812.5 750.0,787.5 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="250.0,787.5 250.0,812.5 100.0,812.5 100.0,787.5 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="500.0,787.5 500.0,812.5 440.0,812.5 440.0,787.5 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="12.5,500.0 12.5,650.0 -12.5,650.0 -12.5,500.0 " fill="#e09a3a"/></g>
+<g id="Window" class="Window"><polygon points="12.5,100.0 12.5,250.0 -12.5,250.0 -12.5,100.0 " fill="#e09a3a"/></g>
+<g id="Door" class="Door"><polygon points="406.0,460.0 406.0,550.0 394.0,550.0 394.0,460.0 " fill="#2a78d6"/></g>
+<g id="Door" class="Door"><polygon points="790.0,494.0 790.0,506.0 700.0,506.0 700.0,494.0 " fill="#2a78d6"/></g>
+<g id="Door" class="Door"><polygon points="560.0,544.0 560.0,556.0 480.0,556.0 480.0,544.0 " fill="#2a78d6"/></g>
+<g id="Door" class="Door"><polygon points="606.0,150.0 606.0,240.0 594.0,240.0 594.0,150.0 " fill="#2a78d6"/></g>
+<g id="Door" class="Door"><polygon points="790.0,344.0 790.0,356.0 700.0,356.0 700.0,344.0 " fill="#2a78d6"/></g>
+</g></g></g>
+</svg>

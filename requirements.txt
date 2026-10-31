@@ -7,7 +7,6 @@ opencv-python
 scikit-image
 shapely>=2.0
 ifcopenshell>=0.8
-statsmodels
 matplotlib
 transformers>=5.22   # the checkpoint uses the newer SegFormer parameter names (segformer.stages.*)
 flask            # only for web/app.py (live demo)

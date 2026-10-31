@@ -80,8 +80,8 @@ def draw_vector(raw, shape):
     return can
 
 
-def save_plan(res, out_dir, name=None, with_ifc=True, band=None):
-    """Writes plan.json (viewer data + quantities + cost [+ images, band]), model.ifc, plan.svg."""
+def save_plan(res, out_dir, name=None, with_ifc=True):
+    """Writes plan.json (viewer data + quantities + cost [+ images]), model.ifc, plan.svg."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     data = viewer_json(res["model"], res["quantities"], res["cost"])
@@ -93,8 +93,6 @@ def save_plan(res, out_dir, name=None, with_ifc=True, band=None):
         crop = (slice(max(ys.min() - 12, 0), ys.max() + 12), slice(max(xs.min() - 12, 0), xs.max() + 12)) if len(ys) else (slice(None), slice(None))
         data["images"] = dict(input=png_data_uri(res["image512"][crop]), seg=png_data_uri(res["overlay512"][crop]),
                               vector=png_data_uri(draw_vector(res["raw512"], m.shape)[crop]))
-    if band is not None:
-        data["band"] = band
     json.dump(data, open(out / "plan.json", "w"))
     write_svg(res["raw"], out / "plan.svg")
     if with_ifc:

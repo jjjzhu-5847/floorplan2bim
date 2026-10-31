@@ -1,4 +1,4 @@
-"""Live demo for the presentation: upload a floor plan image, get 3D + takeoff + cost range.
+"""Live demo for the presentation: upload a floor plan image, get 3D + takeoff + cost.
 
     pip install flask
     python web/app.py            # then open http://127.0.0.1:5000
@@ -17,15 +17,6 @@ from pipeline import run_image, save_plan  # noqa: E402
 from web.build_page import page_data, render  # noqa: E402
 
 app = Flask(__name__)
-SCENARIOS = None
-
-
-def scenarios():
-    global SCENARIOS
-    if SCENARIOS is None and config.PPI_CSV.exists():
-        from price_forecast.cost_by_month import build_scenarios
-        SCENARIOS = build_scenarios()
-    return SCENARIOS
 
 
 @app.get("/")
@@ -44,12 +35,7 @@ def plan():
     f.save(path)
     try:
         res = run_image(path)
-        band = None
-        sc = scenarios()
-        if sc:
-            from price_forecast.cost_by_month import cost_band
-            band = cost_band({k: v for k, v in res["cost"].items() if k != "TOTAL"}, sc)
-        data = save_plan(res, config.OUTPUTS_DIR / "plans" / f"upload_{path.stem}", name=Path(f.filename).stem, band=band)
+        data = save_plan(res, config.OUTPUTS_DIR / "plans" / f"upload_{path.stem}", name=Path(f.filename).stem)
         return jsonify(data)
     except Exception as e:  # noqa: BLE001
         return jsonify(error=str(e)), 422

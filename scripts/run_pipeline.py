@@ -3,7 +3,6 @@
     python scripts/run_pipeline.py --image samples/demo_images/input_1316.png --name 1316
     python scripts/run_pipeline.py --svg samples/sample_plan/model.svg --name sample --px-per-m 100
     python scripts/run_pipeline.py --svg data/cubicasa5k/high_quality/123/model.svg --px-per-m 100   # ground truth
-Add --band to attach the cost-by-start-month range (needs data/ppi/ppi_monthly.csv).
 """
 import argparse
 import sys
@@ -22,18 +21,13 @@ def main():
     ap.add_argument("--name")
     ap.add_argument("--label", help="display name on the web page")
     ap.add_argument("--px-per-m", type=float, help="known scale; default: estimate from door widths")
-    ap.add_argument("--band", action="store_true", help="add cost range by start month")
     ap.add_argument("--no-ifc", action="store_true")
     a = ap.parse_args()
     src = a.image or a.svg
     name = a.name or Path(src).stem
     res = run_image(src, a.px_per_m) if a.image else run_svg(src, a.px_per_m)
-    band = None
-    if a.band:
-        from price_forecast.cost_by_month import cost_band
-        band = cost_band({k: v for k, v in res["cost"].items() if k != "TOTAL"})
     out = config.OUTPUTS_DIR / "plans" / name
-    save_plan(res, out, name=a.label or name, with_ifc=not a.no_ifc, band=band)
+    save_plan(res, out, name=a.label or name, with_ifc=not a.no_ifc)
     q, c = res["quantities"], res["cost"]
     print(f"{name}: scale {res['px_per_m']:.1f} px/m ({res['scale_source']}), "
           f"{len(res['raw']['walls'])} walls, {len(res['raw']['openings'])} openings, {len(res['raw']['spaces'])} rooms")
