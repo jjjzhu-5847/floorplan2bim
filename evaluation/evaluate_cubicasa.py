@@ -35,7 +35,7 @@ from vectorization.svg_io import parse_svg, rasterize, write_svg  # noqa: E402
 from vectorization.vectorize import vectorize_mask  # noqa: E402
 from vectorization.transform import to_original  # noqa: E402
 from bim_generation.geometry import build_model, rect_axis  # noqa: E402
-from bim_generation.scale import scale_from_doors, scale_fused, scale_features, area_label_scale  # noqa: E402
+from bim_generation.scale import scale_from_doors, scale_fused, scale_features, area_label_scale, INK  # noqa: E402
 from recognition.ocr import read_area_labels  # noqa: E402
 from takeoff_cost.quantities import quantities  # noqa: E402
 from takeoff_cost.cost import cost  # noqa: E402
@@ -117,10 +117,11 @@ def eval_plan(folder, model, save_example=False, root=None, size=config.SEG_WORK
     versions["D"] = measure(raw_d, true_ppm)
     row.update({f"D_{k}": v for k, v in wall_geometry(raw_d, gt).items()})
     row["scale_err_pred_doors_pct"] = err(scale_from_doors(raw_d)[0])
-    ppm_pred, est = scale_fused(raw_d, work_scale=s, labels=labels)  # recognised geometry: calibrated on val
+    ink = np.asarray(Image.fromarray(img).convert("L")) < INK  # the drawing at full resolution
+    ppm_pred, est = scale_fused(raw_d, work_scale=s, labels=labels, ink=ink)  # recognised geometry: calibrated on val
     row["scale_err_pred_pct"] = err(ppm_pred)
     row.update({f"scale_err_pred_{m}_pct": err(v) for m, v in est.items()})
-    row.update({f"pred_feat_{k}": v for k, v in scale_features(raw_d).items()}, work_scale=s,
+    row.update({f"pred_feat_{k}": v for k, v in scale_features(raw_d, ink).items()}, work_scale=s,
                pred_feat_area_labels=area_label_scale(raw_d, labels))
     if ppm_pred:
         versions["E"] = measure(raw_d, ppm_pred)

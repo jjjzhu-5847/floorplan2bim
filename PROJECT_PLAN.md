@@ -425,6 +425,10 @@ floorplan2bim/
 - `vectorization/vectorize.py` 是**清理后**版本（共线缺口按门像素补门/短缺口接上、合并容差随墙厚、删除悬空短墙），因为它对 3D 更好（C 5.8→5.1，房间 0.45→0.50），代价是 D 造价 8.5→9.5%。消融结果：`outputs/evaluation_val_vec0`（清理前）、`vec1`（全部）、`vecA/B/C`。
 - **`config.SCALE_CALIBRATED` 是按清理前的矢量化校准的**，矢量化定稿后要重新校准：`python evaluation/evaluate_cubicasa.py --split val --all-floors --examples 0 --out outputs/evaluation_val_final` → `python evaluation/calibrate_scale.py outputs/evaluation_val_final` → 把结果抄进 config → 再跑一次验证集确认。
 
+### 2026-10-31 补充：原图测量与"问题在不在模型"
+- 新增原图测量（`bim_generation/scale.py` 的 `doors_img`、`ext_walls_img`）：模型给位置，回原图按墨迹量门宽/墙厚。系统性偏差消失（门 0.77 m，接近真值 0.80），单层尺度误差 11.5% → 10.7%，多层偏差明显减小；`config.SCALE_CALIBRATED` 已按 `outputs/evaluation_val_fullres` 重新校准（全部五种 + OCR）。**E 的新数字还没跑**（验证集运行被中断）。
+- 诊断（`python evaluation/diag_door_scale.py`，验证集单层）：门宽推尺度的离散度——标准答案的门 5.3%；**标准答案掩码 → 我们的矢量化 5.6%**；**SegFormer → 我们的矢量化 13.4%**。结论：矢量化不是问题，**多出的约 8 个百分点来自识别模型** → 训练模型值得做。另：原图测量在干净输入上反而更差（9.5%），测量规则会被剖面线/文字/门扇干扰，有改进空间。
+
 ### 下一步（按顺序）
 1. **继续提高 3D 准确度**（用户优先级）。最大的杠杆是**自训练识别模型**（任务 5.5，RTX 4070 Super）：用训练集全部 4,200 张、更多轮次，目标墙 IoU 0.60→0.7+、门 0.25→0.4+。训练脚本可参考 floor-plan-document-intelligence 仓库的 `scripts/train_segmentation.py`。训练后 RQ4 训练集要换成 SegFormer 没见过的图（重新划分），并重新校准尺度。
    其次是矢量化：房间合并（只找到一半房间）、墙偏厚（占地 IoU 0.51）。

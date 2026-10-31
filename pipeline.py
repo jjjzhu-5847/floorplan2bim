@@ -53,7 +53,9 @@ def run_image(image_path, px_per_m=None, model=None):
     src = "given"
     if px_per_m is None:
         from recognition.ocr import read_area_labels
-        px_per_m, _ = scale_fused(raw, work_scale=seg["transform"][0], labels=read_area_labels(img))
+        from bim_generation.scale import INK
+        ink = np.asarray(Image.fromarray(img).convert("L")) < INK
+        px_per_m, _ = scale_fused(raw, work_scale=seg["transform"][0], labels=read_area_labels(img), ink=ink)
         src = "door widths, wall thicknesses and printed room areas"
     return _finish(raw, px_per_m, src, dict(kind="image", source=str(image_path), image=img,
                                             image512=seg["image512"], mask512=seg["mask512"],

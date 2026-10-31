@@ -1,31 +1,39 @@
 {
- "run": "outputs/evaluation_val_ocr",
+ "run": "outputs/evaluation_val_fullres",
  "fitted_on": "single-storey",
  "n_fit": 319,
  "sizes": {
-  "doors": 0.996357421875,
-  "ext_walls": 0.34796875000000005,
-  "int_walls": 0.19878906249999942,
-  "area_labels": 1.0434508737222852
+  "doors": 1.0099609374999998,
+  "ext_walls": 0.3521875,
+  "int_walls": 0.198515625,
+  "doors_img": 0.77,
+  "ext_walls_img": 0.26,
+  "area_labels": 1.0255254056828105
  },
  "offsets": {
   "doors": 0.0,
   "ext_walls": 0.0,
   "int_walls": 0.0,
+  "doors_img": 0.0,
+  "ext_walls_img": 0.0,
   "area_labels": 0.0
  },
  "spread": {
-  "doors": 0.12354572809158348,
-  "ext_walls": 0.16821957790749908,
-  "int_walls": 0.16574965612104298,
-  "area_labels": 0.1041040563101806
+  "doors": 0.13432604912009283,
+  "ext_walls": 0.17313664596273282,
+  "int_walls": 0.18417945690672965,
+  "doors_img": 0.1428571428571428,
+  "ext_walls_img": 0.1923076923076924,
+  "area_labels": 0.09295788361506008
  },
- "chosen": "doors + ext walls + area labels",
+ "chosen": "all five + area labels",
  "weights": {
-  "doors": 65.51557148591274,
-  "ext_walls": 35.338403245866175,
-  "int_walls": 0.0,
-  "area_labels": 92.27088723742226
+  "doors": 55.42165845377557,
+  "ext_walls": 33.35968951718318,
+  "int_walls": 29.47933103221564,
+  "doors_img": 49.00000000000004,
+  "ext_walls_img": 27.039999999999974,
+  "area_labels": 115.72509473216215
  },
  "comparison": [
   {
@@ -39,66 +47,138 @@
   },
   {
    "variant": "doors only",
-   "coverage_pct": 99.5,
-   "median_abs": 14.326599821615838,
-   "p90_abs": 51.21820694522033,
-   "single_median_abs": 12.354572809158327,
-   "single_signed": -4.440892098500626e-14,
-   "multi_signed": 34.540856832015045
+   "coverage_pct": 99.75,
+   "median_abs": 15.49603558305932,
+   "p90_abs": 55.717656159350206,
+   "single_median_abs": 13.432604912009271,
+   "single_signed": -2.220446049250313e-14,
+   "multi_signed": 34.047573003287624
   },
   {
    "variant": "ext_walls only",
    "coverage_pct": 100.0,
-   "median_abs": 18.99416255051638,
-   "p90_abs": 63.295419576942066,
-   "single_median_abs": 16.821957790749874,
+   "median_abs": 18.999556344276833,
+   "p90_abs": 63.76985625820871,
+   "single_median_abs": 17.31366459627326,
    "single_signed": 4.440892098500626e-14,
-   "multi_signed": 46.02604400538834
+   "multi_signed": 48.53593611357589
   },
   {
    "variant": "int_walls only",
    "coverage_pct": 100.0,
-   "median_abs": 18.991943407349243,
-   "p90_abs": 64.7847428686568,
-   "single_median_abs": 16.574965612104265,
+   "median_abs": 21.533946829581513,
+   "p90_abs": 70.32384861317828,
+   "single_median_abs": 18.417945690672934,
+   "single_signed": -4.440892098500626e-14,
+   "multi_signed": 47.65840220385618
+  },
+  {
+   "variant": "doors_img only",
+   "coverage_pct": 90.0,
+   "median_abs": 15.58441558441559,
+   "p90_abs": 58.506493506493506,
+   "single_median_abs": 14.285714285714256,
    "single_signed": 4.440892098500626e-14,
-   "multi_signed": 40.365435604403956
+   "multi_signed": 15.58441558441559
+  },
+  {
+   "variant": "ext_walls_img only",
+   "coverage_pct": 100.0,
+   "median_abs": 23.076923076923062,
+   "p90_abs": 57.69230769230771,
+   "single_median_abs": 19.230769230769273,
+   "single_signed": -4.440892098500626e-14,
+   "multi_signed": 15.384615384615419
   },
   {
    "variant": "doors + ext walls",
    "coverage_pct": 100.0,
-   "median_abs": 13.961633301921239,
-   "p90_abs": 49.97290100974532,
-   "single_median_abs": 11.79355192194521,
-   "single_signed": -1.7474282364164373,
-   "multi_signed": 39.23615790273027
+   "median_abs": 13.829960068088337,
+   "p90_abs": 53.31437839432709,
+   "single_median_abs": 12.228376698066068,
+   "single_signed": -0.5893136409573341,
+   "multi_signed": 39.41173744829965
   },
   {
-   "variant": "all three",
+   "variant": "mask: all three",
    "coverage_pct": 100.0,
-   "median_abs": 13.39254362590454,
-   "p90_abs": 53.316815411585374,
-   "single_median_abs": 12.069389664929652,
-   "single_signed": -0.920874070404798,
-   "multi_signed": 41.2586381121153
+   "median_abs": 14.501823402686032,
+   "p90_abs": 55.043484731696914,
+   "single_median_abs": 12.94038564846478,
+   "single_signed": -0.672563751970956,
+   "multi_signed": 43.41758720016185
+  },
+  {
+   "variant": "image: doors + ext walls",
+   "coverage_pct": 100.0,
+   "median_abs": 14.928478626769737,
+   "p90_abs": 46.97183468718115,
+   "single_median_abs": 13.347013836968358,
+   "single_signed": -1.7396927972501253,
+   "multi_signed": 20.88228429628989
+  },
+  {
+   "variant": "mask + image doors/ext",
+   "coverage_pct": 100.0,
+   "median_abs": 13.106330781872854,
+   "p90_abs": 45.727976441906875,
+   "single_median_abs": 11.263653772050796,
+   "single_signed": -0.5991545902372386,
+   "multi_signed": 31.148269003419337
+  },
+  {
+   "variant": "all five",
+   "coverage_pct": 100.0,
+   "median_abs": 13.166905481782786,
+   "p90_abs": 49.275362872754854,
+   "single_median_abs": 11.592111830243468,
+   "single_signed": -1.1596326853008487,
+   "multi_signed": 35.999777703174594
   },
   {
    "variant": "doors + ext walls + area labels",
    "coverage_pct": 100.0,
-   "median_abs": 13.42073355090228,
-   "p90_abs": 51.38843343152195,
-   "single_median_abs": 11.182180703061428,
-   "single_signed": -1.5852235316099805,
-   "multi_signed": 39.23615790273027
+   "median_abs": 12.9588017513115,
+   "p90_abs": 54.474901726198496,
+   "single_median_abs": 11.535174541994353,
+   "single_signed": -1.784630876020843,
+   "multi_signed": 39.12568606251832
   },
   {
-   "variant": "all three + area labels",
+   "variant": "mask: all three + area labels",
    "coverage_pct": 100.0,
-   "median_abs": 12.92594344676718,
-   "p90_abs": 53.920566334264585,
-   "single_median_abs": 11.816882637059667,
-   "single_signed": -1.246580781269091,
-   "multi_signed": 43.06775202981215
+   "median_abs": 14.237477823468481,
+   "p90_abs": 55.69798214153477,
+   "single_median_abs": 12.12913200515463,
+   "single_signed": -1.3174672124327325,
+   "multi_signed": 45.39132588130534
+  },
+  {
+   "variant": "image: doors + ext walls + area labels",
+   "coverage_pct": 100.0,
+   "median_abs": 13.761892050569202,
+   "p90_abs": 47.02595070158763,
+   "single_median_abs": 11.985918406093832,
+   "single_signed": -1.9785621784062735,
+   "multi_signed": 19.484567703909317
+  },
+  {
+   "variant": "mask + image doors/ext + area labels",
+   "coverage_pct": 100.0,
+   "median_abs": 12.599245878071308,
+   "p90_abs": 45.29324526617134,
+   "single_median_abs": 10.869242589554872,
+   "single_signed": -1.0549964825416258,
+   "multi_signed": 29.19999413167147
+  },
+  {
+   "variant": "all five + area labels",
+   "coverage_pct": 100.0,
+   "median_abs": 12.584892706206496,
+   "p90_abs": 48.57482848371816,
+   "single_median_abs": 10.7034379609394,
+   "single_signed": -1.3624552457115469,
+   "multi_signed": 35.93293866211369
   }
  ]
 }

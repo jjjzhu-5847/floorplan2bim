@@ -61,10 +61,13 @@ def main(run_dir, all_floors=False):
     print(f"  area labels: found on {ok.mean() * 100:.0f}% of plans; factor {sizes['area_labels']:.3f}; "
           f"spread {spread['area_labels'] * 100:.1f}%")
     variants = {f"{m} only": {m: 1.0} for m in METHODS}
-    variants["doors + ext walls"] = {m: 1 / spread[m] ** 2 for m in ("doors", "ext_walls")}
-    variants["all three"] = {m: 1 / spread[m] ** 2 for m in METHODS}
+    combos = {"doors + ext walls": ("doors", "ext_walls"), "mask: all three": ("doors", "ext_walls", "int_walls"),
+              "image: doors + ext walls": ("doors_img", "ext_walls_img"),
+              "mask + image doors/ext": ("doors", "ext_walls", "doors_img", "ext_walls_img"), "all five": METHODS}
+    for name, ms in combos.items():
+        variants[name] = {m: 1 / spread[m] ** 2 for m in ms if np.isfinite(spread.get(m, np.nan))}
     if fo.any():
-        for base in ("doors + ext walls", "all three"):
+        for base in combos:
             variants[base + " + area labels"] = {**variants[base], "area_labels": 1 / spread["area_labels"] ** 2}
     one = df.n_floors == 1
     longest = df[["img_w", "img_h"]].max(axis=1)

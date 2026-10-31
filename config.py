@@ -32,14 +32,13 @@ SCALE_PRIORS = dict(sizes=dict(doors=0.797, ext_walls=0.245, int_walls=0.120, ar
 SCALE_LABEL_MAX_DISAGREEMENT = 0.35  # drop the area-label estimate if it differs from doors/walls by more
 # Effective sizes and weights as our recognition + vectorizer measures them, calibrated on the VALIDATION split
 # (evaluation/calibrate_scale.py). Used for real images (condition E, run_image, live demo).
-# Calibrated 2026-10-31 on single-storey validation plans (outputs/priors/scale_calibration.json, 512-px recognition):
-# our doors measure ~25% wider and walls ~40% thicker than the ground truth (blurred predicted mask); printed room
-# areas (found on 30% of plans) are used where they agree with doors/walls. Chosen fusion: doors + ext walls + area labels
-# (median scale error on single-storey plans 11.2%; doors only 12.4%; image size only 17.7%).
-SCALE_CALIBRATED = dict(sizes=dict(doors=0.996, ext_walls=0.348, int_walls=0.199,
-                                   area_labels=1.043),
-                        weights=dict(doors=65.5, ext_walls=35.3, int_walls=0.0,
-                                     area_labels=92.3))
+# Calibrated 2026-10-31 on single-storey validation plans (outputs/priors/scale_calibration.json, from
+# outputs/evaluation_val_fullres): on the 512-px mask our doors measure ~27% wider and walls ~40% thicker than the
+# ground truth; measured again on the original image they come out close to the true sizes (doors 0.77 m).
+# Chosen fusion: all five + area labels (median scale error on single-storey plans 10.7%;
+# mask doors + walls + labels 11.5%; doors only 13.4%; image size only 17.7%).
+SCALE_CALIBRATED = dict(sizes=dict(doors=1.010, ext_walls=0.352, int_walls=0.199, doors_img=0.770, ext_walls_img=0.260, area_labels=1.026),
+                        weights=dict(doors=55.4, ext_walls=33.4, int_walls=29.5, doors_img=49.0, ext_walls_img=27.0, area_labels=115.7))
 
 # ---------------------------------------------------------------- recognition
 SEG_CLASSES = ["background", "room", "wall", "door", "window"]
