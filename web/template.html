@@ -256,13 +256,11 @@ if (window.THREE && THREE.OrbitControls) {
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     cx = (x0 + x1) / 2; cz = (y0 + y1) / 2; span = Math.max(x1 - x0, y1 - y0);
-    const M = {wall: mat(css('--wall')), ext: mat(css('--wall-ext')), floor: mat(css('--floor')), glass: mat(css('--glass'), {transparent:true, opacity:.45}), door: mat(css('--door'))};
+    const M = {wall: mat(css('--wall')), ext: mat(css('--wall-ext')), glass: mat(css('--glass'), {transparent:true, opacity:.45}), door: mat(css('--door'))};
     for (const r of D.rooms){
       const g = new THREE.ShapeGeometry(new THREE.Shape(r.pts.map(p => new THREE.Vector2(p[0], p[1])))); g.rotateX(Math.PI/2);
       const m = new THREE.Mesh(g, mat(tint[r.type] || css('--floor'), {side:THREE.DoubleSide})); m.position.y = .005; group.add(m);
     }
-    const slab = new THREE.Shape([[x0-.3,y0-.3],[x1+.3,y0-.3],[x1+.3,y1+.3],[x0-.3,y1+.3]].map(p => new THREE.Vector2(...p)));
-    const sg = new THREE.ExtrudeGeometry(slab, {depth:.2, bevelEnabled:false}); sg.rotateX(Math.PI/2); group.add(new THREE.Mesh(sg, M.floor));
     for (const [x,y,z0,len,t,h,ang,ext] of D.boxes){
       const top = Math.min(z0+h, lim); if (top <= z0 + 1e-3) continue;
       const m = new THREE.Mesh(new THREE.BoxGeometry(len, top-z0, t), ext ? M.ext : M.wall);
