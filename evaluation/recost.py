@@ -9,7 +9,8 @@ from U(0.7, 1.3) x its value and reports how the full-system cost error (median 
 it shows whether the conclusions depend on the unit rates.
 --write reprices a saved run in place after the unit rates change: the cost and cost-error columns of every
 condition, the cost-based run-time signal (rt_cost_per_m2) and summary.json. Cost is linear in the quantities, so
-this equals rerunning the evaluation; recognition, vectorization and scale are untouched.
+this equals rerunning the evaluation; recognition, vectorization and scale are untouched. Walls are priced on gross
+face area (length x config.H_WALL); runs saved before that rule get the gross-area columns derived from their lengths.
 """
 import argparse
 import json
@@ -25,25 +26,37 @@ from takeoff_cost.cost import cost  # noqa: E402
 from evaluation.aace import classify  # noqa: E402
 
 
+ITEMS = {"ext_wall_gross_area_m2": "ext_wall_m2", "int_wall_gross_area_m2": "int_wall_m2",
+         "floor_area_m2": "floor_m2", "doors_interior": "door_int_ea", "doors_entry": "door_entry_ea",
+         "window_area_m2": "window_m2"}
+
+
 def cost_errors(df, rates, version="E", single_only=True):
     d = df[df.n_floors == 1] if single_only else df
     d = d[d[f"{version}_floor_area_m2"].notna()]
-    q = lambda v, r: cost({k: r[f"{v}_{k}"] for k in ("ext_wall_net_area_m2", "int_wall_net_area_m2",  # noqa: E731
-                                                     "floor_area_m2", "doors_interior", "doors_entry",
-                                                     "window_area_m2")}, rates)["TOTAL"]
+    q = lambda v, r: cost({k: r[f"{v}_{k}"] for k in ITEMS}, rates)["TOTAL"]  # noqa: E731
     ref = d.apply(lambda r: q("A", r), axis=1)
     est = d.apply(lambda r: q(version, r), axis=1)
     return (est / ref - 1) * 100
 
 
-ITEMS = {"ext_wall_net_area_m2": "ext_wall_m2", "int_wall_net_area_m2": "int_wall_m2", "floor_area_m2": "floor_m2",
-         "doors_interior": "door_int_ea", "doors_entry": "door_entry_ea", "window_area_m2": "window_m2"}
+def add_gross_areas(df):
+    """Gross wall face area = length x storey height, for runs saved before walls were priced on gross area."""
+    new = {f"{v}_{w}_wall_gross_area_m2": df[f"{v}_{w}_wall_length_m"] * config.H_WALL
+           for v in "ABCDE" for w in ("ext", "int") if f"{v}_{w}_wall_length_m" in df}
+    for w in ("ext", "int"):
+        ref = new.get(f"A_{w}_wall_gross_area_m2")
+        for v in "BCDE":
+            col = f"{v}_{w}_wall_gross_area_m2"
+            if ref is not None and col in new:
+                new[f"{col}_err_pct"] = pd.Series(np.where(ref > 0, (new[col] / ref - 1) * 100, np.nan), index=df.index)
+    return pd.concat([df.drop(columns=[c for c in new if c in df]), pd.DataFrame(new, index=df.index)], axis=1)
 
 
 def reprice(run):
     from evaluation.evaluate_cubicasa import summarize
     p = Path(run) / "results.csv"
-    df = pd.read_csv(p)
+    df = add_gross_areas(pd.read_csv(p))
     for v in "ABCDE":
         if f"{v}_floor_area_m2" in df:
             ok = df[f"{v}_cost"].notna()

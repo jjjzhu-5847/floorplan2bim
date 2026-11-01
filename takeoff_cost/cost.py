@@ -1,4 +1,6 @@
-"""Cost = quantities x unit rates (config.UNIT_RATES). Scope: walls, floor finish, doors, windows only."""
+"""Cost = quantities x unit rates (config.UNIT_RATES). Scope: walls, floor finish, doors, windows only.
+Walls are priced on gross face area (openings not deducted) and doors and windows separately, as the rate source
+(Michigan Assessor's Manual, Vol. I, Unit-in-Place Costs) measures them."""
 import sys
 from pathlib import Path
 
@@ -10,8 +12,8 @@ def cost(q, r=None):
     """Returns {item: USD, ..., "TOTAL": USD}."""
     r = r or UNIT_RATES
     items = {
-        "Exterior walls (net face)": q.get("ext_wall_net_area_m2", 0) * r["ext_wall_m2"],
-        "Interior partitions (net face)": q.get("int_wall_net_area_m2", 0) * r["int_wall_m2"],
+        "Exterior walls (gross face)": q.get("ext_wall_gross_area_m2", 0) * r["ext_wall_m2"],
+        "Interior partitions (gross face)": q.get("int_wall_gross_area_m2", 0) * r["int_wall_m2"],
         "Floor finish": q["floor_area_m2"] * r["floor_m2"],
         "Interior doors": q["doors_interior"] * r["door_int_ea"],
         "Entrance doors": q["doors_entry"] * r["door_entry_ea"],

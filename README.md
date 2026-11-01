@@ -47,7 +47,7 @@ it is done that way, the **result** of the final system on the test split (301 s
   cut into overlapping 512-px tiles and the results are averaged.
 - **Why:** the public model we started from shrinks the whole plan to 512 px, where a 10 cm wall is only 2–3 px wide,
   and it found doors poorly. Doors matter twice: they are counted, and step 4 measures the scale from them. On the
-  validation split our B2 beat our smaller B0 on every measure (gross cost error 24.2% → 21.6%).
+  validation split our B2 beat our smaller B0 on every measure (gross cost error 24.2% → 21.3%).
 - **Result:** IoU wall 0.73, door 0.52, window 0.66, room 0.89 (public model: 0.60, 0.25, 0.49, 0.78).
 - **Code:** `recognition/segformer.py` (run), `recognition/train_segformer.py` (train); model
   `models/segformer_native_b2.pt`.
@@ -76,7 +76,7 @@ it is done that way, the **result** of the final system on the test split (301 s
 - **Why:** a BIM model and a takeoff need elements (a wall with a length, a thickness and openings), not pixels.
   Rules are transparent and can be checked and tuned without retraining the network.
 - **Result:** given perfect pixels (condition C below) the rules find the walls almost exactly (precision 1.00,
-  recall 0.98) and the cost is off by only 3.2%; most of the remaining error comes from recognition and scale.
+  recall 0.98) and the cost is off by only 3.1%; most of the remaining error comes from recognition and scale.
   The weak spot is interior wall length: even from perfect pixels it is off by 16% on a single plan (median; the
   first pipeline: 68%).
 - **Code:** `vectorization/vectorize.py`.
@@ -113,7 +113,8 @@ it is done that way, the **result** of the final system on the test split (301 s
 ### Step 6. Quantity takeoff
 - **What:** measures what an estimator would measure by hand.
 - **How:** from the 3D model: wall length = wall footprint area ÷ thickness (so corners are counted once), for
-  exterior and interior walls separately; net wall face area = length × 2.7 m − openings; floor area of the rooms;
+  exterior and interior walls separately; gross wall face area = length × 2.7 m (openings not deducted, as the rate
+  source measures walls); floor area of the rooms;
   doors in exterior walls are entrance doors, the rest interior doors; window count and area (width × 1.2 m).
 - **Why:** these are the items for walls, finishes and openings, and each can be compared with the ground truth
   one by one, which shows where the errors are.
@@ -124,21 +125,22 @@ it is done that way, the **result** of the final system on the test split (301 s
 
 ### Step 7. Cost
 - **What:** prices the quantities.
-- **How:** quantity × unit rate for six items: exterior wall and interior partition (per m² of net face), floor
+- **How:** quantity × unit rate for six items: exterior wall and interior partition (per m² of gross face), floor
   finish (per m²), interior and entrance doors (each), windows (per m²). The unit rates are US public data: the
-  State of Michigan 2025 Assessor's Manual (Vol. II, unit-in-place costs), midpoint of each range, with walls built
-  up layer by layer as the manual does (exterior wall = 2×6 studs + sheathing + vinyl siding + insulation + gypsum
-  board + paint). They are converted to Houston with the DoD area cost factors (Texas 0.82 / Michigan 1.03 = 0.796;
-  Houston has no row of its own): exterior wall 146 USD/m², partition 81 USD/m², floor finish 78 USD/m², interior
-  door 371 USD, entrance door 634 USD, window 358 USD/m² (derivation in `config.py`). One factor scales every rate,
-  so no percentage result depends on the location. `evaluation/recost.py --write` reprices all saved results when
-  the rates change, without rerunning the recognition.
+  State of Michigan 2025 Assessor's Manual, Volume I (residential), unit-in-place costs of quality Class C
+  ("standard", the class of the manual's worked example). As in the manual, walls are measured by gross area and
+  built up layer by layer (exterior wall = 2×6 studs + insulation + OSB + vinyl siding + drywall + paint), and doors
+  and windows are priced separately. The rates are converted to Houston with the DoD area cost factors (Texas 0.82 /
+  Michigan 1.03 = 0.796; Houston has no row of its own): exterior wall 140 USD/m², partition 81 USD/m², floor finish
+  53 USD/m², interior door 358 USD, entrance door 557 USD, window 364 USD/m² (derivation in `config.py`). One factor
+  scales every rate, so no percentage result depends on the location. `evaluation/recost.py --write` reprices all
+  saved results when the rates change, without rerunning the recognition.
 - **Why:** pricing weights each quantity error by what it costs, and it places the result against the AACE estimate
   classes, the industry standard for how accurate an estimate is at each project stage.
-- **Result:** median cost error 12.5% (net, total vs total) and 23.2% (gross: item errors added without offsetting);
-  72% of plans within ±20%; AACE Class 5 (80% of true costs within −24% / +28% of the estimate). The baseline:
-  33.1% / 40.7%, no AACE class. With every unit rate varied at random by ±30% (1,000 draws) the median error stays
-  between 12.0% and 12.9% and the class stays 5, so the conclusions do not hinge on the exact rates.
+- **Result:** median cost error 12.6% (net, total vs total) and 23.2% (gross: item errors added without offsetting);
+  71% of plans within ±20%; AACE Class 5 (80% of true costs within −24.5% / +28.2% of the estimate). The baseline:
+  32.7% / 38.5%, no AACE class. With every unit rate varied at random by ±30% (1,000 draws) the median error stays
+  between 11.8% and 12.8% and the class stays 5, so the conclusions do not hinge on the exact rates.
 - **Code:** `takeoff_cost/cost.py`.
 
 ### Step 8. Cost range (part 2)
@@ -152,13 +154,14 @@ it is done that way, the **result** of the final system on the test split (301 s
     quantile regression predicts the 10th and 90th percentile of the error; a conformal correction widens the
     range until 80% of the (cross-validated) training plans fall inside. It was chosen over "one range for every
     plan" and "three risk groups" by cross-validated interval score;
-  - output: e.g. for test plan 6059, estimated at 25,000 USD: "cost at exact quantities (80% range) 21,500 – 29,700
-    USD (−14% / +19%), AACE Class 3" (its true cost is 29,300 USD).
+  - output: e.g. for test plan 6059, estimated at 25,900 USD: "cost at exact quantities (80% range) 22,200 – 30,900
+    USD (−15% / +19%), AACE Class 3" (its true cost is 29,900 USD).
 - **Why:** the user has no ground truth. One accuracy statement for the whole system hides that some plans are much
   worse than others; a range per plan says how far to trust this plan, in the industry's own terms.
-- **Result:** 79% of test plans fall inside their 80% range (true cost above it for 12%, below it for 8%; ideal
-  10% each). The ranges are narrower than one range for every plan (median width 39 vs 45 points) and score 27%
-  better (interval score 76 vs 104).
+- **Result:** 78% of test plans fall inside their 80% range (true cost above it for 13%, below it for 9%; ideal
+  10% each). The ranges are narrower than one range for every plan (median width 38 vs 45 points) and score 32%
+  better (interval score 77 vs 113). 39% of test plans get a range that meets AACE Class 4, 13% one wider than
+  Class 5.
 - **Code:** `review/signals.py` (signals), `review/intervals.py` (range models), `review/risk.py` (one plan),
   `evaluation/error_model.py` (training and testing); model `models/error_model.joblib`.
 
@@ -195,32 +198,32 @@ Metrics:
 | recognition IoU wall / door / window / room | 0.60 / 0.25 / 0.49 / 0.78 | **0.73 / 0.52 / 0.66 / 0.89** |
 | 3D walls precision / recall | – | **0.94 / 0.95** |
 | scale error (median) | 38.3% | **6.5%** |
-| cost error by condition, net: B / C / D / **E** | 13.7% / 8.1% / 11.4% / **33.1%** | 5.4% / 3.2% / 8.1% / **12.5%** |
-| cost error E, gross | 40.7% | **23.2%** |
-| plans within ±20% cost error | 26% | **72%** |
-| AACE class | none (−12% / +125%) | **Class 5 (−24% / +28%)** |
+| cost error by condition, net: B / C / D / **E** | 12.9% / 7.9% / 10.9% / **32.7%** | 5.2% / 3.1% / 8.9% / **12.6%** |
+| cost error by condition, gross: B / C / D / **E** | 12.9% / 36.5% / 33.2% / **38.5%** | 5.2% / 8.9% / 19.5% / **23.2%** |
+| plans within ±20% cost error | 28% | **71%** |
+| AACE class | none (−12% / +115%) | **Class 5 (−24.5% / +28.2%)** |
 
 **Improvement path, validation split** (319 single-storey plans; each row adds to the one above; from row 2 on, E uses
 each model's own scale calibration, `compare_models.py`):
 
 | version | E net | E gross | run in `outputs/` |
 |---|---|---|---|
-| public model, first pipeline | 30.4% | 41.5% | `evaluation_val_baseline` |
-| + vectorization fixes, scale priors and calibration, OCR | 19.2% | 29.3% | `evaluation_val_fullres` |
-| + our model fine-tuned at 512 px | 17.2% | 27.7% | `evaluation_val_m512` |
-| + our B0 at full resolution, balcony / railing / furniture rules | 14.0% | 24.2% | `evaluation_val_dev_sep3` |
-| **+ our B2 at full resolution (final)** | **11.7%** | **21.6%** | `evaluation_val_b2` |
+| public model, first pipeline | 29.1% | 39.9% | `evaluation_val_baseline` |
+| + vectorization fixes, scale priors and calibration | 19.1% | 27.8% | `evaluation_val_fullres` |
+| + our model fine-tuned at 512 px | 16.5% | 27.3% | `evaluation_val_m512` |
+| + our B0 at full resolution, balcony / railing / furniture rules | 13.6% | 24.2% | `evaluation_val_dev_sep3` |
+| **+ our B2 at full resolution (final)** | **11.8%** | **21.3%** | `evaluation_val_b2` |
 
 **Part 2, test split** (`outputs/rq4/quality_metrics.csv`; the method was chosen by cross-validation on the 955
 held-out training plans, the test split only reports):
 
 | measure | one range for every plan | **per-plan range (chosen)** |
 |---|---|---|
-| coverage (target 80%) | 74.4% | **79.4%** |
-| true cost above the range (target 10%) | 14.0% | **12.3%** |
-| true cost below the range (target 10%) | 11.6% | **8.3%** |
-| median width (points) | 45.0 | **39.1** |
-| interval score (lower is better) | 104.1 | **75.9** |
+| coverage (target 80%) | 73.8% | **78.1%** |
+| true cost above the range (target 10%) | 14.6% | **12.6%** |
+| true cost below the range (target 10%) | 11.6% | **9.3%** |
+| median width (points) | 44.9 | **38.0** |
+| interval score (lower is better) | 113.1 | **77.1** |
 
 ---
 

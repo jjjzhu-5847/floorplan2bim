@@ -83,16 +83,18 @@ def interval_metrics(y, lo, hi):
 
 
 def quality_metrics(y, lo, hi):
-    """The measures reported for an interval method: coverage, true cost above / below the range, median width
-    and interval score (all on the AACE scale: actual cost relative to the estimate, %)."""
+    """The measures reported for an interval method: coverage, true cost above / below the range, median width,
+    interval score (all on the AACE scale: actual cost relative to the estimate, %) and the share of plans whose
+    range fits each AACE class."""
     actual = (np.exp(-y) - 1) * 100
     low, high = actual_vs_estimate(lo, hi)
     width = high - low
     score = width + (2 / ALPHA) * (np.clip(low - actual, 0, None) + np.clip(actual - high, 0, None))
+    shares = {k: v for k, v in interval_metrics(y, lo, hi).items() if k.startswith(("class_", "wider"))}
     return {"plans": len(y), "coverage % (target 80)": 100 * np.mean((actual >= low) & (actual <= high)),
             "true cost above the range % (target 10)": 100 * np.mean(actual > high),
             "true cost below the range % (target 10)": 100 * np.mean(actual < low),
-            "median width (points)": float(np.median(width)), "interval score": float(np.mean(score))}
+            "median width (points)": float(np.median(width)), "interval score": float(np.mean(score)), **shares}
 
 
 def cv_intervals(method, X, y):

@@ -58,26 +58,29 @@ VEC_ROOM_MODE = "footprint"      # rooms from room-class pixels ("pixels") or fr
 VEC_DROP_NONSEPARATING = True  # drop interior walls with the same room on both faces (furniture lines)
 
 # ---------------------------------------------------------------- cost
-# Unit rates (USD, 2025), from the State of Michigan, State Tax Commission, 2025 Assessor's Manual Vol. II,
-# Unit-in-Place Costs (UIP 2 interior construction, UIP 5 wall costs; cost data licensed from Marshall & Swift/Boeckh;
-# michigan.gov/treasury -> Assessor's Manual). Midpoint of each published range, converted at 10.7639 sq ft per m2;
-# costs include the general contractor's overhead and profit, not the architect's fee; no county multiplier.
-# Assemblies follow the manual's wall-cost method (UIP 5, page 1-2: a wall is the sum of its layers):
-#   exterior wall  2x6 wood studs 16" o.c. 3.855 + OSB sheathing 2.285 + vinyl siding 5.695 + 6" fiberglass batts
-#                  1.565 + 1/2" gypsum board 2.365 + paint (prime + one coat) 1.22 = 16.985 $/sq ft
-#   partition      wood studs, gypsum board both sides, 4" wall 6.99 + paint both sides 2.44 = 9.43 $/sq ft
-#   floor finish   mean of carpet (medium) 6.265, vinyl sheet 8.66, hardwood strip 3/4" (common) 12.30 = 9.075 $/sq ft
-#   interior door  flush hollow-core wood, incl. hardware, 25.75 $/sq ft of opening x 0.80 m x 2.10 m
-#   entrance door  residential insulated metal, incl. hardware, 39.125 $/sq ft of opening x 0.90 m x 2.10 m
-#   window         wood double hung 30.375 $/sq ft x 1.375 for double glazing (manual: add 25% to 50%)
+# Unit rates (USD, 2025), from the State of Michigan, State Tax Commission, 2025 Assessor's Manual Volume I
+# (Residential and Agricultural), Unit-in-Place Costs section (cost data licensed from Marshall & Swift/Boeckh;
+# michigan.gov/treasury -> Assessor's Manual), column of quality Class C, the class of the manual's worked residential
+# example; converted at 10.7639 sq ft per m2; no county multiplier. The manual measures exterior walls and interior
+# partitions by gross area ("assume no window or door openings") and prices doors and windows separately, so the
+# wall rates apply to gross face area (takeoff_cost/cost.py). Assemblies are the sum of their layers ($/sq ft):
+#   exterior wall  2x6 studs 16" o.c. 3.82 + 6" insulation 1.49 + 1/2" OSB sheathing 2.29 + vinyl siding 5.37
+#                  + 1/2" drywall 2.32 + paint, two coats 1.06 = 16.35 $/sq ft of wall
+#   partition      2x4 wood studs 16" o.c. 2.67 + 1/2" drywall two sides 4.65 + paint two coats two sides 2.12
+#                  = 9.44 $/sq ft of partition
+#   floor finish   mix of the manual's example: 65% carpet with pad 5.03 + 35% (vinyl inlay 5.85 + 5/8" plywood
+#                  underlayment 2.55) = 6.2095 $/sq ft of floor
+#   interior door  flush door, 450 each
+#   entrance door  metal, hollow core, insulated, 700 each
+#   window         wood double-hung 28.35 $/sq ft x 1.5 ("for double glazed, add 50%") = 42.525 $/sq ft of window
 _SQFT = 10.7639
 UNIT_RATES_MICHIGAN = {
-    "ext_wall_m2": round(16.985 * _SQFT, 1),            # exterior wall, per m2 of net face area (182.8)
-    "int_wall_m2": round(9.43 * _SQFT, 1),              # interior partition, per m2 of net face area (101.5)
-    "floor_m2": round(9.075 * _SQFT, 1),                # floor finish, per m2 (97.7)
-    "door_int_ea": round(25.75 * 0.80 * 2.10 * _SQFT),  # interior door, each (466)
-    "door_entry_ea": round(39.125 * 0.90 * 2.10 * _SQFT),  # entrance door, each (796)
-    "window_m2": round(30.375 * 1.375 * _SQFT, 1),      # window, per m2 (449.6)
+    "ext_wall_m2": round(16.35 * _SQFT, 1),      # exterior wall, per m2 of gross face area (176.0)
+    "int_wall_m2": round(9.44 * _SQFT, 1),       # interior partition, per m2 of gross face area (101.6)
+    "floor_m2": round(6.2095 * _SQFT, 1),        # floor finish, per m2 (66.8)
+    "door_int_ea": 450,                          # interior door, each
+    "door_entry_ea": 700,                        # entrance door, each
+    "window_m2": round(42.525 * _SQFT, 1),       # window, per m2 (457.7)
 }
 # Location: Houston. DoD area cost factors (national average 1.00; US Army Corps of Engineers, "DoD Area Cost
 # Factors (ACF)", PAX Newsletter 3.2.1, 29 March 2024, Table 4-1 of UFC 3-701-01): Texas 0.82, Michigan 1.03.
@@ -86,7 +89,7 @@ UNIT_RATES_MICHIGAN = {
 # are scaled by the same factor, so every percentage result (cost errors, AACE class, cost ranges) is unchanged.
 LOCATION_FACTOR = 0.82 / 1.03
 UNIT_RATES = {k: v * LOCATION_FACTOR for k, v in UNIT_RATES_MICHIGAN.items()}  # not rounded: one exact factor
-UNIT_RATE_SOURCE = "Houston: Michigan Assessor's Manual 2025 x DoD location factor 0.796"
+UNIT_RATE_SOURCE = "Houston: Michigan Assessor's Manual 2025, Vol. I (residential), Class C x DoD location factor 0.796"
 
 # ---------------------------------------------------------------- AACE estimate classes (task 4.2)
 # Building and general construction matrix of ASTM E2516-11 (2024), which is based on AACE International RP 17R-97,

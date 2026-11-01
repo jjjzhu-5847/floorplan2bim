@@ -3,7 +3,9 @@
 Rules (state them in the report):
 - Wall length = wall footprint area / median thickness, per class, so overlaps at corners count once.
   Interior wall footprint excludes any part overlapping exterior walls.
-- Net wall face area = length x storey height - opening areas (door 2.1 m high, window 1.2 m high).
+- Gross wall face area = length x storey height; this is the priced quantity (cost.py), with doors and
+  windows priced separately. Net wall face area = gross - opening areas (door 2.1 m high, window 1.2 m high)
+  is reported for reference.
 - Floor area = sum of room polygons (net, inside walls).
 - Entrance door = door hosted by an exterior wall.
 """

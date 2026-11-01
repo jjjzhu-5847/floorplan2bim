@@ -207,8 +207,8 @@ function renderRange(){
 function renderTables(){
   const Q = plan.quantities, C = plan.cost;
   const rows = [
-    ['Exterior walls'], ['Length', Q.ext_wall_length_m, 'm'], ['Net face area', Q.ext_wall_net_area_m2, 'm²'],
-    ['Interior partitions'], ['Length', Q.int_wall_length_m, 'm'], ['Net face area', Q.int_wall_net_area_m2, 'm²'],
+    ['Exterior walls'], ['Length', Q.ext_wall_length_m, 'm'], ['Gross face area', Q.ext_wall_gross_area_m2, 'm²'],
+    ['Interior partitions'], ['Length', Q.int_wall_length_m, 'm'], ['Gross face area', Q.int_wall_gross_area_m2, 'm²'],
     ['Openings'], ['Entrance doors', Q.doors_entry, 'ea', 0], ['Interior doors', Q.doors_interior, 'ea', 0], ['Windows', Q.windows, 'ea', 0], ['Window area', Q.window_area_m2, 'm²'],
     ['Floors'], ['Net floor area', Q.floor_area_m2, 'm²'],
   ];
@@ -227,8 +227,8 @@ function renderTables(){
 
 // ---------- cost = quantity x unit rate (unit rates fixed in config.py)
 const COST_ITEMS = [  // [label, quantity key, unit, rate key, cost key]
-  ['Exterior walls', 'ext_wall_net_area_m2', 'm²', 'ext_wall_m2', 'Exterior walls (net face)'],
-  ['Interior partitions', 'int_wall_net_area_m2', 'm²', 'int_wall_m2', 'Interior partitions (net face)'],
+  ['Exterior walls', 'ext_wall_gross_area_m2', 'm²', 'ext_wall_m2', 'Exterior walls (gross face)'],
+  ['Interior partitions', 'int_wall_gross_area_m2', 'm²', 'int_wall_m2', 'Interior partitions (gross face)'],
   ['Floor finish', 'floor_area_m2', 'm²', 'floor_m2', 'Floor finish'],
   ['Interior doors', 'doors_interior', 'ea', 'door_int_ea', 'Interior doors'],
   ['Entrance doors', 'doors_entry', 'ea', 'door_entry_ea', 'Entrance doors'],

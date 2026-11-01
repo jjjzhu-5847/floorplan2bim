@@ -10,6 +10,7 @@ window area scale with 1/px_per_m, floor area with its square, counts do not cha
 Two cost errors, as in estimating practice: NET = (our total / reference total - 1), where over- and
 under-estimated items offset each other; GROSS = sum over items of |our quantity - reference quantity| x unit rate,
 over the reference total - no offsetting, so every wrong quantity counts. GROSS is the decision metric.
+The table is printed and written to outputs/checks/compare_models.csv (one column per run).
 """
 import sys
 from pathlib import Path
@@ -22,9 +23,13 @@ import config  # noqa: E402
 from bim_generation.scale import METHODS  # noqa: E402
 from takeoff_cost.cost import cost  # noqa: E402
 
-LINEAR = ("ext_wall_net_area_m2", "int_wall_net_area_m2", "window_area_m2")
-ITEMS = {"ext_wall_net_area_m2": "ext_wall_m2", "int_wall_net_area_m2": "int_wall_m2", "floor_area_m2": "floor_m2",
-         "doors_interior": "door_int_ea", "doors_entry": "door_entry_ea", "window_area_m2": "window_m2"}
+LINEAR = ("ext_wall_gross_area_m2", "int_wall_gross_area_m2", "window_area_m2")
+ITEMS = {"ext_wall_gross_area_m2": "ext_wall_m2", "int_wall_gross_area_m2": "int_wall_m2",
+         "floor_area_m2": "floor_m2", "doors_interior": "door_int_ea", "doors_entry": "door_entry_ea",
+         "window_area_m2": "window_m2"}
+# how each reported quantity scales with 1 / px_per_m (condition E is derived from D)
+QTY_POWER = {"ext_wall_length_m": 1, "int_wall_length_m": 1, "floor_area_m2": 2, "window_area_m2": 1,
+             "doors_interior": 0, "doors_entry": 0, "windows": 0}
 
 
 def gross(q, ref):
@@ -74,9 +79,12 @@ def main(runs):
                      "rooms found": (d.D_n_rooms / d.A_n_rooms).median(),
                      "D net |err|": d.D_cost_err_pct.abs().median(), "D gross": np.nanmedian(gd),
                      "scale |err|": np.nanmedian(np.abs(s)), "E gross": np.nanmedian(ge),
-                     "E net |err|": np.nanmedian(np.abs(e)), "E within 20%": np.nanmean(np.abs(e) <= 20) * 100})
+                     "E net |err|": np.nanmedian(np.abs(e)), "E within 20%": np.nanmean(np.abs(e) <= 20) * 100,
+                     **{f"E {k} median |err| %": np.nanmedian(np.abs(d[f"D_{k}"] * r ** p / d[f"A_{k}"] - 1)) * 100
+                        for k, p in QTY_POWER.items() for r in [100 / (100 + s)]}})
     t = pd.DataFrame(rows).set_index("run").T
     print(t.round(3).to_string())
+    t.to_csv(config.OUTPUTS_DIR / "checks" / "compare_models.csv")
 
 
 if __name__ == "__main__":

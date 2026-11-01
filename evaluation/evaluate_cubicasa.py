@@ -44,7 +44,8 @@ from review.signals import runtime_signals  # noqa: E402
 
 OUT = config.OUTPUTS_DIR / "evaluation"
 KEYS = ["ext_wall_length_m", "int_wall_length_m", "ext_wall_net_area_m2", "int_wall_net_area_m2",
-        "floor_area_m2", "window_area_m2", "doors_interior", "doors_entry", "windows"]
+        "ext_wall_gross_area_m2", "int_wall_gross_area_m2", "floor_area_m2", "window_area_m2", "doors_interior",
+        "doors_entry", "windows"]
 
 
 def list_plans(split, root=None, plans_file=None):
