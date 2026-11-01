@@ -3,7 +3,7 @@
     python evaluation/recost.py outputs/evaluation                 # current config.UNIT_RATES -> recost/summary.json
     python evaluation/recost.py outputs/evaluation --sensitivity   # unit rates varied +-30%, 1000 draws
     python evaluation/recost.py outputs/evaluation --write         # reprice the saved run in place
-results.csv keeps every quantity of every condition, so after replacing the placeholder unit rates in config.py
+results.csv keeps every quantity of every condition, so after changing the unit rates in config.py
 this script refreshes the cost errors and the AACE class. The sensitivity run draws each unit rate independently
 from U(0.7, 1.3) x its value and reports how the full-system cost error (median |error|, P10/P90, AACE class) moves:
 it shows whether the conclusions depend on the unit rates.

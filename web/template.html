@@ -74,11 +74,6 @@ h2{font:600 13px/1.2 var(--sans);margin:0;letter-spacing:.02em}
 .sect h2{min-height:28px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .src{font:400 11.5px var(--sans);color:var(--muted);letter-spacing:0}
 td.x{color:var(--muted);font:12px var(--mono);text-align:right;white-space:nowrap;padding-left:10px}
-input.rate{width:84px;font:12.5px var(--mono);text-align:right;color:var(--ink);background:var(--panel);
-  border:1px solid var(--line);border-radius:4px;padding:3px 6px;margin:0 4px}
-input.rate:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
-input.rate.edited{border-color:var(--accent);background:var(--accent-soft)}
-button.link{font:inherit;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 td,th{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
 th{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left}
@@ -161,8 +156,6 @@ const fmt = (v, d=1) => Number(v).toLocaleString('en-US',{minimumFractionDigits:
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let plan = null;
-let rates = null;  // unit rates typed by the user; null = the defaults sent with each plan
-const curRates = () => rates || plan.unit_rates || {};
 
 // ---------- upload: each new plan replaces the previous one
 $('upload').addEventListener('change', async e => {
@@ -205,9 +198,8 @@ function renderReview(){
   el.hidden = !(r && r.low_pct != null);
   if (el.hidden) return;
   const pct = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)) + '%';
-  const total = costTotal();
   el.className = 'review ' + (r.review ? 'high' : r.aace_class <= 3 ? 'low' : 'medium');
-  el.innerHTML = `<b>Likely actual cost (${r.coverage_pct}% range): ${fmt(total * (1 + r.low_pct / 100),0)} – ${fmt(total * (1 + r.high_pct / 100),0)} USD</b> ` +
+  el.innerHTML = `<b>Likely actual cost (${r.coverage_pct}% range): ${fmt(r.cost_low,0)} – ${fmt(r.cost_high,0)} USD</b> ` +
     `(${pct(r.low_pct)} / ${pct(r.high_pct)}) · ` +
     (r.review ? '<b>wider than AACE Class 5 — have an estimator check this plan</b>' : `AACE Class ${r.aace_class}`);
 }
@@ -222,50 +214,26 @@ function renderTables(){
   ];
   $('qto').innerHTML = `<tr><th>Item</th><th class="n">Quantity</th><th></th></tr>` + rows.map(r => r.length === 1 ? `<tr class="group"><td colspan="3">${r[0]}</td></tr>`
     : `<tr><td>${r[0]}</td><td class="n">${r[1] == null ? '–' : fmt(r[1], r[3] ?? 1)}</td><td class="u">${r[2]}</td></tr>`).join('');
-  const R = curRates();
+  const R = plan.unit_rates || {};
+  $('rateSrc').textContent = plan.unit_rate_source ? 'unit rates: ' + plan.unit_rate_source : '';
   $('cost').innerHTML = `<tr><th>Item</th><th class="n">Quantity</th><th class="n">Unit rate (USD)</th><th class="n">USD</th></tr>` +
-    COST_ITEMS.map(([label, q, u, rk]) => `<tr><td>${label}</td>` +
+    COST_ITEMS.map(([label, q, u, rk, ck]) => `<tr><td>${label}</td>` +
       `<td class="x">${fmt(Q[q], u === 'ea' ? 0 : 1)} ${u}</td>` +
-      `<td class="x">×<input class="rate" type="number" min="0" step="any" data-k="${rk}" value="${R[rk] ?? ''}" aria-label="${label} unit rate">/${u}</td>` +
-      `<td class="n" data-cost="${rk}"></td></tr>`).join('') +
-    `<tr class="total"><td colspan="3">Total (partial scope)</td><td class="n" id="costTotal"></td></tr>`;
-  updateCosts();
+      `<td class="x">× ${R[rk] == null ? '–' : fmt(R[rk], u === 'ea' ? 0 : 1)} /${u}</td>` +
+      `<td class="n">${fmt(C[ck], 0)}</td></tr>`).join('') +
+    `<tr class="total"><td colspan="3">Total (partial scope)</td><td class="n">${fmt(C.TOTAL, 0)}</td></tr>`;
   renderImages();
 }
 
-// ---------- cost = quantity x unit rate; the rates can be edited
-const COST_ITEMS = [  // [label, quantity key, unit, rate key]
-  ['Exterior walls', 'ext_wall_net_area_m2', 'm²', 'ext_wall_m2'],
-  ['Interior partitions', 'int_wall_net_area_m2', 'm²', 'int_wall_m2'],
-  ['Floor finish', 'floor_area_m2', 'm²', 'floor_m2'],
-  ['Interior doors', 'doors_interior', 'ea', 'door_int_ea'],
-  ['Entrance doors', 'doors_entry', 'ea', 'door_entry_ea'],
-  ['Windows', 'window_area_m2', 'm²', 'window_m2'],
+// ---------- cost = quantity x unit rate (unit rates fixed in config.py)
+const COST_ITEMS = [  // [label, quantity key, unit, rate key, cost key]
+  ['Exterior walls', 'ext_wall_net_area_m2', 'm²', 'ext_wall_m2', 'Exterior walls (net face)'],
+  ['Interior partitions', 'int_wall_net_area_m2', 'm²', 'int_wall_m2', 'Interior partitions (net face)'],
+  ['Floor finish', 'floor_area_m2', 'm²', 'floor_m2', 'Floor finish'],
+  ['Interior doors', 'doors_interior', 'ea', 'door_int_ea', 'Interior doors'],
+  ['Entrance doors', 'doors_entry', 'ea', 'door_entry_ea', 'Entrance doors'],
+  ['Windows', 'window_area_m2', 'm²', 'window_m2', 'Windows'],
 ];
-const costTotal = () => COST_ITEMS.reduce((t, [, q, , rk]) => t + (plan.quantities[q] || 0) * (curRates()[rk] || 0), 0);
-function updateCosts(){
-  const R = curRates(), D = plan.unit_rates || {};
-  for (const [, q, , rk] of COST_ITEMS){
-    document.querySelector(`[data-cost="${rk}"]`).textContent = fmt((plan.quantities[q] || 0) * (R[rk] || 0), 0);
-    document.querySelector(`input.rate[data-k="${rk}"]`).classList.toggle('edited', R[rk] !== D[rk]);
-  }
-  $('costTotal').textContent = fmt(costTotal(), 0);
-  const edited = COST_ITEMS.some(([, , , rk]) => R[rk] !== D[rk]);
-  $('rateSrc').innerHTML = edited ? 'unit rates edited · <button class="link" id="rateReset">reset</button>'
-    : (plan.unit_rate_source ? 'unit rates: ' + plan.unit_rate_source : '');
-  renderReview();
-}
-$('cost').addEventListener('input', e => {
-  const k = e.target.dataset.k; if (!k) return;
-  const v = parseFloat(e.target.value);
-  if (!(v >= 0)) return;
-  rates = {...curRates(), [k]: v};
-  updateCosts();
-});
-$('rateSrc').addEventListener('click', e => {
-  if (e.target.id !== 'rateReset') return;
-  rates = null; renderTables();
-});
 
 // ---------- 3D
 const canvas = $('view'), labelsEl = $('labels');

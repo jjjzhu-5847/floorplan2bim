@@ -27,11 +27,12 @@ holds the goals, decisions, assumptions, evaluation design and the report and pr
 - Every number that goes into the report must come from a file under `outputs/`. Record key numbers in
   `PROJECT_PLAN.md` section 9 as you go.
 - If a check fails, stop and fix that first; everything downstream depends on it.
-- Unit rates in `config.py` come from the State of Michigan 2025 Assessor's Manual (derivation in the comments). If
-  they change, run `python evaluation/recost.py <run> --write` on every saved run, then rerun `error_model.py`.
+- Unit rates in `config.py` are the State of Michigan 2025 Assessor's Manual rates converted to Houston with one
+  location factor (derivation in the comments). If they change, run `python evaluation/recost.py <run> --write` on
+  every saved run, then rerun `error_model.py` (one of its inputs, cost per m2, depends on the rates).
 
 ## Quick checks after changing code
 - `python scripts/run_pipeline.py --svg samples/sample_plan/model.svg --name sample --px-per-m 100`
   must still give: exterior wall length 36.00 m, floor area 72.79 m2, window area 13.56 m2
-  (TOTAL 36,640 USD with the current unit rates).
+  (TOTAL 29,170 USD with the current unit rates).
 - `python evaluation/evaluate_cubicasa.py --split val --limit 10` must finish with an empty `failed.csv`.

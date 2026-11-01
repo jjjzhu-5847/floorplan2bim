@@ -71,15 +71,22 @@ VEC_DROP_NONSEPARATING = True  # drop interior walls with the same room on both 
 #   entrance door  residential insulated metal, incl. hardware, 39.125 $/sq ft of opening x 0.90 m x 2.10 m
 #   window         wood double hung 30.375 $/sq ft x 1.375 for double glazing (manual: add 25% to 50%)
 _SQFT = 10.7639
-UNIT_RATES = {
-    "ext_wall_m2": round(16.985 * _SQFT, 1),            # exterior wall, per m2 of net face area
-    "int_wall_m2": round(9.43 * _SQFT, 1),              # interior partition, per m2 of net face area
-    "floor_m2": round(9.075 * _SQFT, 1),                # floor finish, per m2
-    "door_int_ea": round(25.75 * 0.80 * 2.10 * _SQFT),  # interior door, each
-    "door_entry_ea": round(39.125 * 0.90 * 2.10 * _SQFT),  # entrance door, each
-    "window_m2": round(30.375 * 1.375 * _SQFT, 1),      # window, per m2
+UNIT_RATES_MICHIGAN = {
+    "ext_wall_m2": round(16.985 * _SQFT, 1),            # exterior wall, per m2 of net face area (182.8)
+    "int_wall_m2": round(9.43 * _SQFT, 1),              # interior partition, per m2 of net face area (101.5)
+    "floor_m2": round(9.075 * _SQFT, 1),                # floor finish, per m2 (97.7)
+    "door_int_ea": round(25.75 * 0.80 * 2.10 * _SQFT),  # interior door, each (466)
+    "door_entry_ea": round(39.125 * 0.90 * 2.10 * _SQFT),  # entrance door, each (796)
+    "window_m2": round(30.375 * 1.375 * _SQFT, 1),      # window, per m2 (449.6)
 }
-UNIT_RATE_SOURCE = "Michigan Assessor's Manual 2025, unit-in-place costs"
+# Location: Houston. DoD area cost factors (national average 1.00; US Army Corps of Engineers, "DoD Area Cost
+# Factors (ACF)", PAX Newsletter 3.2.1, 29 March 2024, Table 4-1 of UFC 3-701-01): Texas 0.82, Michigan 1.03.
+# Houston has no row of its own, so the Texas state factor is used. Note: the UFC advises against applying its ACFs
+# to unit-price data; we use the ratio only as an approximate location adjustment (stated in the report). All rates
+# are scaled by the same factor, so every percentage result (cost errors, AACE class, cost ranges) is unchanged.
+LOCATION_FACTOR = 0.82 / 1.03
+UNIT_RATES = {k: v * LOCATION_FACTOR for k, v in UNIT_RATES_MICHIGAN.items()}  # not rounded: one exact factor
+UNIT_RATE_SOURCE = "Houston: Michigan Assessor's Manual 2025 x DoD location factor 0.796"
 
 # ---------------------------------------------------------------- AACE estimate classes (task 4.2)
 # Building and general construction matrix of ASTM E2516-11 (2024), which is based on AACE International RP 17R-97,

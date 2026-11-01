@@ -123,11 +123,13 @@ it is done that way, the **result** of the final system on the test split (301 s
 - **What:** prices the quantities.
 - **How:** quantity × unit rate for six items: exterior wall and interior partition (per m² of net face), floor
   finish (per m²), interior and entrance doors (each), windows (per m²). The unit rates are US public data: the
-  State of Michigan 2025 Assessor's Manual (Vol. II, unit-in-place costs), midpoint of each range. Walls are built
-  up layer by layer as the manual does, e.g. exterior wall = 2×6 studs + sheathing + vinyl siding + insulation +
-  gypsum board + paint = 183 USD/m²; partition 102 USD/m²; floor finish 98 USD/m²; interior door 466 USD; entrance
-  door 796 USD; window 450 USD/m² (derivation in `config.py`). `evaluation/recost.py --write` reprices all saved
-  results when the rates change, without rerunning the recognition.
+  State of Michigan 2025 Assessor's Manual (Vol. II, unit-in-place costs), midpoint of each range, with walls built
+  up layer by layer as the manual does (exterior wall = 2×6 studs + sheathing + vinyl siding + insulation + gypsum
+  board + paint). They are converted to Houston with the DoD area cost factors (Texas 0.82 / Michigan 1.03 = 0.796;
+  Houston has no row of its own): exterior wall 146 USD/m², partition 81 USD/m², floor finish 78 USD/m², interior
+  door 371 USD, entrance door 634 USD, window 358 USD/m² (derivation in `config.py`). One factor scales every rate,
+  so no percentage result depends on the location. `evaluation/recost.py --write` reprices all saved results when
+  the rates change, without rerunning the recognition.
 - **Why:** pricing weights each quantity error by what it costs, and it places the result against the AACE estimate
   classes, the industry standard for how accurate an estimate is at each project stage.
 - **Result:** median cost error 12.5% (net, total vs total) and 23.2% (gross: item errors added without offsetting);
@@ -147,8 +149,8 @@ it is done that way, the **result** of the final system on the test split (301 s
     quantile regression predicts the 10th and 90th percentile of the error; a conformal correction widens the
     range until 80% of the (cross-validated) training plans fall inside. It was chosen over "one range for every
     plan" and "three risk groups" by cross-validated interval score;
-  - output: e.g. for test plan 6059, estimated at 31,400 USD: "likely actual cost 27,000 – 37,300 USD (−14% / +19%),
-    accuracy of an AACE Class 3 estimate" (its true cost is 36,900 USD).
+  - output: e.g. for test plan 6059, estimated at 25,000 USD: "likely actual cost 21,500 – 29,700 USD (−14% / +19%),
+    accuracy of an AACE Class 3 estimate" (its true cost is 29,300 USD).
     **If the range is wider than AACE Class 5, the website says: have an estimator check this plan.**
 - **Why:** the user has no ground truth. One accuracy statement for the whole system hides that some plans are much
   worse than others; a range per plan says how far to trust this plan, in the industry's own terms.
@@ -253,7 +255,7 @@ Quick check after changing code: `python scripts/run_pipeline.py --svg samples/s
 | `takeoff_cost/` | steps 6–7: quantities and cost |
 | `review/` | step 8: run-time signals, cost ranges, AACE class / review hint |
 | `evaluation/` | conditions A–E, scale calibration, model comparison, test table, part-2 model, AACE, figures |
-| `web/` | the website (`app.py`): upload → whole pipeline → image, recognition, 3D, takeoff, cost (quantity × unit rate; rates editable, total and cost range follow), cost range |
+| `web/` | the website (`app.py`): upload → whole pipeline → image, recognition, 3D, takeoff, cost (quantity × unit rate; unit rates shown), cost range |
 | `scripts/` | `run_pipeline.py`: one plan from the command line |
 | `models/` | our recognition model (+ training curve), the part-2 model |
 | `outputs/evaluation/`, `outputs/evaluation_baseline/` | test split: final system / baseline |
