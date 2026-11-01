@@ -67,9 +67,9 @@ def run_image(image_path, px_per_m=None, model=None, gt_svg=None):
     if src != "given":  # cost range (RQ4) from the same run-time signals the interval model was trained on
         from review.signals import runtime_signals
         from review.risk import assess
-        res["review"] = assess(runtime_signals(img.shape, seg["mask512"], seg["confidence"], raw, est,
-                                               res["quantities"], res["cost"], n_labels=len(labels)),
-                               total_cost=res["cost"]["TOTAL"])
+        res["cost_range"] = assess(runtime_signals(img.shape, seg["mask512"], seg["confidence"], raw, est,
+                                                   res["quantities"], res["cost"], n_labels=len(labels)),
+                                   total_cost=res["cost"]["TOTAL"])
     return res
 
 
@@ -150,8 +150,8 @@ def save_plan(res, out_dir, name=None, with_ifc=True):
                 scale_source=res["scale_source"], unit_rates=config.UNIT_RATES, unit_rate_source=config.UNIT_RATE_SOURCE)
     if res["kind"] == "image":
         data["images"], data["notes"] = plan_views(res)
-    if res.get("review"):
-        data["review"] = res["review"]
+    if res.get("cost_range"):
+        data["cost_range"] = res["cost_range"]
     json.dump(data, open(out / "plan.json", "w"))
     write_svg(res["raw"], out / "plan.svg")
     if with_ifc:

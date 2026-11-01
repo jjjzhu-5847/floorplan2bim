@@ -39,7 +39,7 @@ h1{font:700 clamp(24px,3.4vw,34px)/1.1 var(--display);margin:0;text-wrap:balance
 .note{font-size:12.5px;color:var(--warn);max-width:80ch;margin:0}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
 .trio>*,.duo>*{min-width:0}
-.review{overflow-wrap:anywhere}
+.range{overflow-wrap:anywhere}
 .trio.solo{grid-template-columns:1fr}
 @media (max-width:1100px){.trio{grid-template-columns:1fr 1fr}.trio .stage{grid-column:1/-1}.stage .frame{aspect-ratio:16/9}}
 @media (max-width:700px){.trio{grid-template-columns:1fr}}
@@ -49,11 +49,11 @@ h1{font:700 clamp(24px,3.4vw,34px)/1.1 var(--display);margin:0;text-wrap:balance
 .frame{position:relative;aspect-ratio:5/4;border:1px solid var(--line);border-radius:4px;background:#fff;overflow:hidden}
 .frame img{display:block;width:100%;height:100%;object-fit:contain}
 .seg.small button{font-size:11.5px;padding:4px 9px}
-.review{padding:10px 14px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;background:var(--panel)}
-.review b{font-weight:600}
-.review.low{border-color:#3d8c5a;background:color-mix(in srgb,#3d8c5a 10%,var(--panel))}
-.review.medium{border-color:#c28a1e;background:color-mix(in srgb,#c28a1e 12%,var(--panel))}
-.review.high{border-color:#b4541f;background:color-mix(in srgb,#b4541f 12%,var(--panel))}
+.range{padding:10px 14px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;background:var(--panel)}
+.range b{font-weight:600}
+.range.low{border-color:#3d8c5a;background:color-mix(in srgb,#3d8c5a 10%,var(--panel))}
+.range.medium{border-color:#c28a1e;background:color-mix(in srgb,#c28a1e 12%,var(--panel))}
+.range.high{border-color:#b4541f;background:color-mix(in srgb,#b4541f 12%,var(--panel))}
 .duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
 @media (max-width:860px){.duo{grid-template-columns:1fr}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px}
@@ -101,7 +101,7 @@ tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padd
   <div class="card empty" id="empty"><p id="emptyTxt">Upload a floor plan image to start.</p></div>
 
   <div id="result" hidden>
-  <div class="review" id="review" role="status" hidden></div>
+  <div class="range" id="range" role="status" hidden></div>
 
   <div class="trio" id="trio">
     <figure class="card panel" id="pIn">
@@ -193,15 +193,15 @@ function renderImages(){
 $('recSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ recKind = b.dataset.k; renderImages(); } });
 
 // ---------- cost range (RQ4 interval model)
-function renderReview(){
-  const r = plan.review, el = $('review');
+function renderRange(){
+  const r = plan.cost_range, el = $('range');
   el.hidden = !(r && r.low_pct != null);
   if (el.hidden) return;
   const pct = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)) + '%';
-  el.className = 'review ' + (r.review ? 'high' : r.aace_class <= 3 ? 'low' : 'medium');
-  el.innerHTML = `<b>Likely actual cost (${r.coverage_pct}% range): ${fmt(r.cost_low,0)} – ${fmt(r.cost_high,0)} USD</b> ` +
+  el.className = 'range ' + (r.aace_class == null ? 'high' : r.aace_class <= 3 ? 'low' : 'medium');
+  el.innerHTML = `<b>Cost at exact quantities (${r.coverage_pct}% range): ${fmt(r.cost_low,0)} – ${fmt(r.cost_high,0)} USD</b> ` +
     `(${pct(r.low_pct)} / ${pct(r.high_pct)}) · ` +
-    (r.review ? '<b>wider than AACE Class 5 — have an estimator check this plan</b>' : `AACE Class ${r.aace_class}`);
+    (r.aace_class == null ? 'wider than AACE Class 5' : `AACE Class ${r.aace_class}`);
 }
 
 function renderTables(){
@@ -309,5 +309,5 @@ if (window.THREE && THREE.OrbitControls) {
   labelsEl.innerHTML = '<span style="left:50%;top:50%">The 3D library did not load. The tables still show the takeoff.</span>';
 }
 
-function renderPlan(){ renderTables(); renderReview(); rebuild3D(); }
+function renderPlan(){ renderTables(); renderRange(); rebuild3D(); }
 </script>

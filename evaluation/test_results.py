@@ -31,6 +31,11 @@ def summarize(d_all):
     row["rooms found"] = (d.D_n_rooms / d.A_n_rooms).median() if "D_n_rooms" in d else np.nan
     scale = d["scale_err_pred_pct"] if "scale_err_pred_pct" in d else d["scale_err_pred_doors_pct"]
     row["scale |err| %"] = scale.abs().median()
+    row["scale signed median % (+ = drawing read too small)"] = scale.median()
+    if "C_wall_precision" in d:
+        row["vectorization only (C): wall precision"] = d.C_wall_precision.median()
+        row["vectorization only (C): wall recall"] = d.C_wall_recall.median()
+    row["vectorization only (C): interior wall length median |err| %"] = d.C_int_wall_length_m_err_pct.abs().median()
     for cond in "BCDE":
         ok = d[f"{cond}_cost_err_pct"].notna()
         g = [gross({k: r[f"{cond}_{k}"] for k in ITEMS}, {k: r[f"A_{k}"] for k in ITEMS}) for _, r in d[ok].iterrows()]

@@ -1,14 +1,14 @@
 # floorplan2bim
 
 **What it does:** you give it a picture of a residential floor plan. It gives back a 3D building model (BIM / IFC),
-the quantities an estimator needs (wall lengths and areas, floor area, doors, windows), a cost estimate, and a
-range for the actual cost that also says whether an estimator should check the plan by hand.
+the quantities an estimator needs (wall lengths and areas, floor area, doors, windows), a cost estimate, and an
+80% range for the true cost (the cost of the exact quantities).
 Every number is checked against the CubiCasa5K ground truth.
 
 The project has two parts:
 - **Part 1: plan image → 3D model → quantities → cost** (steps 1–7 below). Goal: make it as accurate as possible.
 - **Part 2: how far off is this estimate?** (step 8). No estimate is perfect, so the system predicts, for each plan,
-  how far the actual cost could be from its estimate, and flags the plans a person should check.
+  how far the true cost could be from its estimate, as an 80% range.
 
 **Try it:** `python web/app.py`, open http://127.0.0.1:5000 and upload a plan image (setup under "How to run").
 
@@ -77,6 +77,8 @@ it is done that way, the **result** of the final system on the test split (301 s
   Rules are transparent and can be checked and tuned without retraining the network.
 - **Result:** given perfect pixels (condition C below) the rules find the walls almost exactly (precision 1.00,
   recall 0.98) and the cost is off by only 3.2%; most of the remaining error comes from recognition and scale.
+  The weak spot is interior wall length: even from perfect pixels it is off by 16% on a single plan (median; the
+  first pipeline: 68%).
 - **Code:** `vectorization/vectorize.py`.
 
 ### Step 4. Scale: how many pixels is one metre?
@@ -92,7 +94,8 @@ it is done that way, the **result** of the final system on the test split (301 s
 - **Why:** every quantity depends on it. A 10% scale error is about a 10% error on lengths and about 20% on areas.
   Several methods agree more often than one: when one is off (few doors, odd walls), the others pull it back.
 - **Result:** median scale error 6.5% (doors alone 7.1%, interior walls 9.1%, exterior walls 18.8%). The baseline,
-  which measured doors recognised by the public model, was off by 38%.
+  which measured doors recognised by the public model, was off by 38%. On the test split the fused scale runs 2.6% high
+  (validation: 0.5%), so drawings come out slightly small: exterior walls −5%, floor area −6% (median).
 - **Code:** `bim_generation/scale.py`; values in `config.py` (`SCALE_PRIORS`, `SCALE_CALIBRATED`).
 
 ### Step 5. BIM model: from pixels to metres, then 3D
@@ -133,13 +136,13 @@ it is done that way, the **result** of the final system on the test split (301 s
 - **Why:** pricing weights each quantity error by what it costs, and it places the result against the AACE estimate
   classes, the industry standard for how accurate an estimate is at each project stage.
 - **Result:** median cost error 12.5% (net, total vs total) and 23.2% (gross: item errors added without offsetting);
-  72% of plans within ±20%; AACE Class 5 (80% of actual costs within −24% / +28% of the estimate). The baseline:
+  72% of plans within ±20%; AACE Class 5 (80% of true costs within −24% / +28% of the estimate). The baseline:
   33.1% / 40.7%, no AACE class. With every unit rate varied at random by ±30% (1,000 draws) the median error stays
   between 12.0% and 12.9% and the class stays 5, so the conclusions do not hinge on the exact rates.
 - **Code:** `takeoff_cost/cost.py`.
 
-### Step 8. Cost range and review hint (part 2)
-- **What:** for each plan, an 80% range for the actual cost, its AACE class, and whether an estimator should check it.
+### Step 8. Cost range (part 2)
+- **What:** for each plan, an 80% range for the true cost, and the AACE class that range corresponds to.
 - **How:**
   - inputs: 24 "run-time signals" the system sees for itself while running steps 1–7: from the 3D model and
     quantities (number of walls, doors, windows and rooms, floor area, wall metres per m², window-to-wall ratio,
@@ -149,14 +152,13 @@ it is done that way, the **result** of the final system on the test split (301 s
     quantile regression predicts the 10th and 90th percentile of the error; a conformal correction widens the
     range until 80% of the (cross-validated) training plans fall inside. It was chosen over "one range for every
     plan" and "three risk groups" by cross-validated interval score;
-  - output: e.g. for test plan 6059, estimated at 25,000 USD: "likely actual cost 21,500 – 29,700 USD (−14% / +19%),
-    accuracy of an AACE Class 3 estimate" (its true cost is 29,300 USD).
-    **If the range is wider than AACE Class 5, the website says: have an estimator check this plan.**
+  - output: e.g. for test plan 6059, estimated at 25,000 USD: "cost at exact quantities (80% range) 21,500 – 29,700
+    USD (−14% / +19%), AACE Class 3" (its true cost is 29,300 USD).
 - **Why:** the user has no ground truth. One accuracy statement for the whole system hides that some plans are much
   worse than others; a range per plan says how far to trust this plan, in the industry's own terms.
-- **Result:** the per-plan range scores 27% better than one range for every plan (interval score 76 vs 104) and is
-  narrower (median width 39% vs 45%); 79% of test plans fall inside their 80% range. The 11% of plans flagged for
-  checking have a median cost error of 34%, the others 12%; the plans not flagged reach AACE Class 4 (−19% / +25%).
+- **Result:** 79% of test plans fall inside their 80% range (true cost above it for 12%, below it for 8%; ideal
+  10% each). The ranges are narrower than one range for every plan (median width 39 vs 45 points) and score 27%
+  better (interval score 76 vs 104).
 - **Code:** `review/signals.py` (signals), `review/intervals.py` (range models), `review/risk.py` (one plan),
   `evaluation/error_model.py` (training and testing); model `models/error_model.joblib`.
 
@@ -172,6 +174,9 @@ To see **which step causes how much error**, every plan is run five ways (`evalu
 | C vectorization only | ground-truth pixels → step 3 | true | the error of the vectorization rules |
 | D recognition + vectorization | our model → step 3 | true | the error when the scale is known |
 | E full system | our model → step 3 | estimated | what a user actually gets |
+
+The **true cost** of a plan is its ground-truth quantities priced with the same unit rates (condition A), so the
+errors measure the takeoff, not price uncertainty or changes during construction.
 
 Metrics:
 - **Cost error, gross** (main metric for choosing between versions): each item's quantity error is priced and the
@@ -206,13 +211,16 @@ each model's own scale calibration, `compare_models.py`):
 | + our B0 at full resolution, balcony / railing / furniture rules | 14.0% | 24.2% | `evaluation_val_dev_sep3` |
 | **+ our B2 at full resolution (final)** | **11.7%** | **21.6%** | `evaluation_val_b2` |
 
-**Part 2, test split** (`outputs/rq4/`):
+**Part 2, test split** (`outputs/rq4/quality_metrics.csv`; the method was chosen by cross-validation on the 955
+held-out training plans, the test split only reports):
 
-| range method | coverage (target 80%) | median width | interval score (lower is better) |
-|---|---|---|---|
-| one range for every plan | 74% | 45% | 104 |
-| three risk groups | 77% | 47% | 99 |
-| **per-plan range (chosen)** | **79%** | **39%** | **76** |
+| measure | one range for every plan | **per-plan range (chosen)** |
+|---|---|---|
+| coverage (target 80%) | 74.4% | **79.4%** |
+| true cost above the range (target 10%) | 14.0% | **12.3%** |
+| true cost below the range (target 10%) | 11.6% | **8.3%** |
+| median width (points) | 45.0 | **39.1** |
+| interval score (lower is better) | 104.1 | **75.9** |
 
 ---
 
@@ -253,7 +261,7 @@ Quick check after changing code: `python scripts/run_pipeline.py --svg samples/s
 | `vectorization/` | step 3: mask → walls, openings, rooms; SVG read/write |
 | `bim_generation/` | steps 4–5: scale, metric model, IFC, 3D view data |
 | `takeoff_cost/` | steps 6–7: quantities and cost |
-| `review/` | step 8: run-time signals, cost ranges, AACE class / review hint |
+| `review/` | step 8: run-time signals, per-plan cost ranges and their AACE class |
 | `evaluation/` | conditions A–E, scale calibration, model comparison, test table, part-2 model, AACE, figures |
 | `web/` | the website (`app.py`): upload → whole pipeline → image, recognition, 3D, takeoff, cost (quantity × unit rate; unit rates shown), cost range |
 | `scripts/` | `run_pipeline.py`: one plan from the command line |

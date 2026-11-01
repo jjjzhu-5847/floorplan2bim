@@ -9,6 +9,8 @@ wall recall,,0.9507008878629692
 wall footprint IoU,,0.6652457747023206
 rooms found,,0.6
 scale |err| %,38.29752604166665,6.505238322059448
+scale signed median % (+ = drawing read too small),36.53320312499999,2.6158810182326464
+vectorization only (C): interior wall length median |err| %,68.10665489490168,16.420196399198616
 B net |err| %,13.72604763981532,5.421576225241209
 B gross %,13.726047639815324,5.4215762252412185
 C net |err| %,8.089934775762043,3.227494550065624
@@ -30,3 +32,5 @@ E doors_entry median err %,0.0,0.0
 E windows median err %,16.666666666666675,0.0
 "E net |err| %, all plans",37.83969917200916,12.505513297266162
 "E net |err| %, multi-storey",53.381981346226894,12.674374938426824
+vectorization only (C): wall precision,,1.0
+vectorization only (C): wall recall,,0.9821949604168974
