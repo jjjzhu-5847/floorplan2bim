@@ -64,11 +64,12 @@ def run_image(image_path, px_per_m=None, model=None, gt_svg=None):
                                             overlay512=overlay(seg["image512"], seg["mask512"]),
                                             raw512=raw512, transform=seg["transform"],
                                             **(_compare(raw, px_per_m, gt_svg) if gt_svg else {})))
-    if src != "given":  # review hint (RQ4) from the same run-time signals the error model was trained on
+    if src != "given":  # cost range (RQ4) from the same run-time signals the interval model was trained on
         from review.signals import runtime_signals
         from review.risk import assess
         res["review"] = assess(runtime_signals(img.shape, seg["mask512"], seg["confidence"], raw, est,
-                                               res["quantities"], res["cost"], n_labels=len(labels)))
+                                               res["quantities"], res["cost"], n_labels=len(labels)),
+                               total_cost=res["cost"]["TOTAL"])
     return res
 
 
@@ -146,7 +147,7 @@ def save_plan(res, out_dir, name=None, with_ifc=True):
     out.mkdir(parents=True, exist_ok=True)
     data = viewer_json(res["model"], res["quantities"], res["cost"])
     data.update(id=out.name, name=name or out.name, real=res["kind"] == "image", px_per_m=res["px_per_m"],
-                scale_source=res["scale_source"])
+                scale_source=res["scale_source"], unit_rates=config.UNIT_RATES, unit_rate_source=config.UNIT_RATE_SOURCE)
     if res["kind"] == "image":
         data["images"], data["notes"] = plan_views(res)
     if res.get("review"):

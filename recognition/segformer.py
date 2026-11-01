@@ -1,10 +1,11 @@
-"""Run the public SegFormer-B0 CubiCasa5K checkpoint on a floor plan image.
+"""Run a SegFormer floor-plan checkpoint on an image (5 classes: background, room, wall, door, window).
 
-Checkpoint: github.com/alifarzadjamali/floor-plan-document-intelligence
-            results/segmentation/phase2_dev/checkpoints/best.pt  (committed here as models/segformer_best.pt)
-The model was trained on 512 x 512 letterboxed images, so inference letterboxes to 512 as well.
-`segment_image` returns the mask at 512 px plus the transform needed to map 512-px coordinates
-back to the original image (see vectorization/transform.py).
+Our model (config.SEGFORMER_CKPT): SegFormer-B2 fine-tuned at the original resolution, run on overlapping 512-px
+tiles (SEG_WORK_SIZE = None, SEG_TILE = 512). The baseline was the public SegFormer-B0 checkpoint of
+github.com/alifarzadjamali/floor-plan-document-intelligence (results/segmentation/phase2_dev/checkpoints/best.pt),
+trained on 512 x 512 letterboxed images; a checkpoint without "model_config" is loaded as that B0.
+`segment_image` returns the mask plus the transform needed to map mask coordinates back to the original image
+(see vectorization/transform.py).
 """
 import sys
 from pathlib import Path

@@ -1,1 +1,2 @@
-"""Step 7 - presentation: static demo page (build_page.py) and live upload demo (app.py)."""
+"""The website: upload a floor plan image, see image | recognition | 3D, takeoff, cost and cost range (app.py,
+template.html)."""

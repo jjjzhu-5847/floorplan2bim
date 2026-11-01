@@ -2,7 +2,7 @@ data/cubicasa5k/
 __pycache__/
 .venv/
 data/seg_cache/
-models/segformer_ours*.pt
 models/*.log
-models/*_history.json
 outputs/*.log
+outputs/uploads/
+outputs/plans/

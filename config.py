@@ -8,9 +8,11 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 CUBICASA_DIR = DATA_DIR / "cubicasa5k"          # unzip the Zenodo archive here
 MODELS_DIR = ROOT / "models"
-# Recognition model: our fine-tune at the original resolution (recognition/train_segformer.py native-train, task 5.5).
-# The public checkpoint it started from is models/segformer_best.pt.
-SEGFORMER_CKPT = MODELS_DIR / "segformer_native.pt"
+# Recognition model: our SegFormer-B2 fine-tune at the original resolution (recognition/train_segformer.py
+# native-train hf:nvidia/segformer-b2-finetuned-ade-512-512), weights stored as fp16. Chosen over our B0 fine-tune
+# on the validation split (outputs/evaluation_val_dev_sep3 vs outputs/evaluation_val_b2). The public B0 checkpoint
+# behind the test-set baseline (outputs/evaluation_baseline) is not kept; see recognition/segformer.py.
+SEGFORMER_CKPT = MODELS_DIR / "segformer_native_b2.pt"
 OUTPUTS_DIR = ROOT / "outputs"
 
 # ---------------------------------------------------------------- geometry assumptions
@@ -18,7 +20,6 @@ H_WALL = 2.7        # storey / wall height
 H_DOOR = 2.1        # door head height
 SILL = 0.9          # window sill height
 H_WIN_TOP = 2.1     # window head height
-SAMPLE_PLAN_DOOR_W = 0.9  # door width drawn in the synthetic test plan; used only by evaluation/error_propagation_demo.py
 # CubiCasa5K ground truth: model.svg coordinates are 100 units = 1 m (reported by the
 # TakeoffLens project; verify on a few plans, see PROJECT_PLAN.md task 0.3).
 CUBICASA_UNITS_PER_M = 100.0
@@ -34,11 +35,11 @@ SCALE_PRIORS = dict(sizes=dict(doors=0.797, ext_walls=0.245, int_walls=0.120, ar
 SCALE_LABEL_MAX_DISAGREEMENT = 0.35  # drop the area-label estimate if it differs from doors/walls by more
 # Effective sizes and weights as our recognition + vectorizer measures them, calibrated on the VALIDATION split
 # (evaluation/calibrate_scale.py). Used for real images (condition E, run_image, live demo).
-# Calibrated 2026-10-31 on single-storey validation plans for the FINAL system (native-resolution model, current
-# vectorizer; outputs/evaluation_val_final_cal -> outputs/priors/scale_calibration.json). Chosen fusion:
-# mask: all three (median scale error on single-storey plans 7.8%).
-SCALE_CALIBRATED = dict(sizes=dict(doors=0.885, ext_walls=0.290, int_walls=0.172, doors_img=0.740, ext_walls_img=0.250, area_labels=1.095),
-                        weights=dict(doors=122.4, ext_walls=33.6, int_walls=62.5, doors_img=0.0, ext_walls_img=0.0, area_labels=0.0))
+# Calibrated 2026-10-31 on single-storey validation plans for the FINAL system (SegFormer-B2 at native resolution,
+# current vectorizer; outputs/evaluation_val_b2 -> outputs/priors/scale_calibration.json). Chosen fusion:
+# mask: all three + area labels (median scale error on single-storey plans 6.8%).
+SCALE_CALIBRATED = dict(sizes=dict(doors=0.850, ext_walls=0.277, int_walls=0.165, doors_img=0.750, ext_walls_img=0.250, area_labels=1.082),
+                        weights=dict(doors=200.7, ext_walls=37.3, int_walls=62.0, doors_img=0.0, ext_walls_img=0.0, area_labels=158.6))
 
 # ---------------------------------------------------------------- recognition
 SEG_CLASSES = ["background", "room", "wall", "door", "window"]
@@ -57,16 +58,28 @@ VEC_ROOM_MODE = "footprint"      # rooms from room-class pixels ("pixels") or fr
 VEC_DROP_NONSEPARATING = True  # drop interior walls with the same room on both faces (furniture lines)
 
 # ---------------------------------------------------------------- cost
-# PLACEHOLDER unit rates (USD). Replace with RSMeans or another cited source (task 3.1).
+# Unit rates (USD, 2025), from the State of Michigan, State Tax Commission, 2025 Assessor's Manual Vol. II,
+# Unit-in-Place Costs (UIP 2 interior construction, UIP 5 wall costs; cost data licensed from Marshall & Swift/Boeckh;
+# michigan.gov/treasury -> Assessor's Manual). Midpoint of each published range, converted at 10.7639 sq ft per m2;
+# costs include the general contractor's overhead and profit, not the architect's fee; no county multiplier.
+# Assemblies follow the manual's wall-cost method (UIP 5, page 1-2: a wall is the sum of its layers):
+#   exterior wall  2x6 wood studs 16" o.c. 3.855 + OSB sheathing 2.285 + vinyl siding 5.695 + 6" fiberglass batts
+#                  1.565 + 1/2" gypsum board 2.365 + paint (prime + one coat) 1.22 = 16.985 $/sq ft
+#   partition      wood studs, gypsum board both sides, 4" wall 6.99 + paint both sides 2.44 = 9.43 $/sq ft
+#   floor finish   mean of carpet (medium) 6.265, vinyl sheet 8.66, hardwood strip 3/4" (common) 12.30 = 9.075 $/sq ft
+#   interior door  flush hollow-core wood, incl. hardware, 25.75 $/sq ft of opening x 0.80 m x 2.10 m
+#   entrance door  residential insulated metal, incl. hardware, 39.125 $/sq ft of opening x 0.90 m x 2.10 m
+#   window         wood double hung 30.375 $/sq ft x 1.375 for double glazing (manual: add 25% to 50%)
+_SQFT = 10.7639
 UNIT_RATES = {
-    "ext_wall_m2": 180.0,     # exterior wall, per m2 of net face area
-    "int_wall_m2": 75.0,      # interior partition, per m2 of net face area
-    "floor_m2": 60.0,         # floor finish, per m2
-    "door_int_ea": 450.0,     # interior door, each
-    "door_entry_ea": 1200.0,  # entrance door, each
-    "window_m2": 550.0,       # window, per m2
+    "ext_wall_m2": round(16.985 * _SQFT, 1),            # exterior wall, per m2 of net face area
+    "int_wall_m2": round(9.43 * _SQFT, 1),              # interior partition, per m2 of net face area
+    "floor_m2": round(9.075 * _SQFT, 1),                # floor finish, per m2
+    "door_int_ea": round(25.75 * 0.80 * 2.10 * _SQFT),  # interior door, each
+    "door_entry_ea": round(39.125 * 0.90 * 2.10 * _SQFT),  # entrance door, each
+    "window_m2": round(30.375 * 1.375 * _SQFT, 1),      # window, per m2
 }
-UNIT_RATE_SOURCE = "placeholder"
+UNIT_RATE_SOURCE = "Michigan Assessor's Manual 2025, unit-in-place costs"
 
 # ---------------------------------------------------------------- AACE estimate classes (task 4.2)
 # Building and general construction matrix of ASTM E2516-11 (2024), which is based on AACE International RP 17R-97,

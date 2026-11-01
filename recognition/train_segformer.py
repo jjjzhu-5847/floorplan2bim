@@ -1,4 +1,6 @@
-"""Task 5.5 - fine-tune the SegFormer-B0 checkpoint on more CubiCasa5K training plans.
+"""Task 5.5 - fine-tune SegFormer on more CubiCasa5K training plans. The final model is SegFormer-B2 trained at the
+original resolution (native-train hf:nvidia/segformer-b2-finetuned-ade-512-512 segformer_native_b2), its weights
+then stored as fp16 to stay under GitHub's 100 MB file limit (masks unchanged: 99.996% pixel agreement).
 
     python recognition/train_segformer.py prepare [768]  # letterbox + rasterize masks -> data/seg_cache/ (~4 min)
     python recognition/train_segformer.py native-prepare  # crops at the original resolution (~10 min)

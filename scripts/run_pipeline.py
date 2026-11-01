@@ -1,6 +1,6 @@
 """Run the whole pipeline for one plan and save outputs/plans/<name>/ (plan.json, plan.svg, model.ifc).
 
-    python scripts/run_pipeline.py --image samples/demo_images/input_1316.png --name 1316
+    python scripts/run_pipeline.py --image data/cubicasa5k/high_quality/123/F1_scaled.png --gt-svg data/cubicasa5k/high_quality/123/model.svg
     python scripts/run_pipeline.py --svg samples/sample_plan/model.svg --name sample --px-per-m 100
     python scripts/run_pipeline.py --svg data/cubicasa5k/high_quality/123/model.svg --px-per-m 100   # ground truth
 """

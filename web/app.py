@@ -1,9 +1,9 @@
-"""Live demo for the presentation: upload a floor plan image, get 3D + takeoff + cost.
+"""The website: upload a floor plan image -> the whole pipeline runs -> image | recognition | 3D, takeoff, cost and
+the cost range.
 
-    pip install flask
     python web/app.py            # then open http://127.0.0.1:5000
-The page shows the saved plans plus an "Upload a floor plan image" button. Uploads run the full
-pipeline (recognition on GPU if available) and are saved under outputs/plans/upload_<time>/.
+Recognition runs on the GPU if there is one (about 10 s per plan). Each upload is saved under outputs/uploads/ and
+its results (plan.json, plan.svg, model.ifc) under outputs/plans/upload_<time>_<name>/ (both kept out of git).
 """
 import sys
 import time
@@ -14,14 +14,14 @@ from flask import Flask, jsonify, request
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config  # noqa: E402
 from pipeline import run_image, save_plan  # noqa: E402
-from web.build_page import page_data, render  # noqa: E402
 
+TEMPLATE = Path(__file__).with_name("template.html")
 app = Flask(__name__)
 
 
 @app.get("/")
 def index():
-    return render(page_data(), live=True)
+    return TEMPLATE.read_text(encoding="utf-8")
 
 
 @app.post("/api/plan")

@@ -1,6 +1,6 @@
 """Compare recognition models through the whole pipeline (task 5.5), single-storey validation plans.
 
-    python evaluation/compare_models.py outputs/evaluation_val_vec1 outputs/evaluation_val_m512 outputs/evaluation_val_native
+    python evaluation/compare_models.py outputs/evaluation_val_fullres outputs/evaluation_val_m512 outputs/evaluation_val_dev_sep3 outputs/evaluation_val_b2
 Each argument is an evaluation run (evaluate_cubicasa.py, --no-ocr is enough) made with one model. Reported:
 recognition IoU (per-plan mean), BIM geometry of condition D (wall centre-line precision / recall within 15 cm,
 footprint IoU, rooms found), cost error of D, and the cost error of the full system E with the scale calibrated for

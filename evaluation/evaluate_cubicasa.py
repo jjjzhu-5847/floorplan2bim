@@ -153,6 +153,29 @@ def eval_plan(folder, model, save_example=False, root=None, size=config.SEG_WORK
     return row
 
 
+def cache_mask(folder, model, size, tile, mask_cache, root=None):
+    """Recognition only: write the SegFormer mask and confidence of one plan to the mask cache."""
+    rel = folder.relative_to(Path(root) if root else config.CUBICASA_DIR).as_posix()
+    cache = Path(mask_cache) / (rel.replace("/", "_") + ".png")
+    if cache.exists():
+        return
+    img = np.array(Image.open(folder / "F1_scaled.png").convert("RGB"))
+    x, _ = prepare_input(img, size)
+    mask, conf = segment(model(), x, tile, with_conf=True)
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(mask).save(cache)
+    json.dump(conf, open(cache.with_suffix(".json"), "w"))
+
+
+def _worker(job):
+    """One plan in a CPU process (masks come from the cache, so no model is needed here)."""
+    folder, kw = job
+    try:
+        return eval_plan(folder, None, **kw), None
+    except Exception as e:  # noqa: BLE001
+        return None, dict(plan=str(folder), error=repr(e), tb=traceback.format_exc(limit=2))
+
+
 def summarize(df, by_storeys=True):
     """Overall summary; with --all-floors also split into single- and multi-storey sheets."""
     out = dict(n_plans=int(len(df)))
@@ -188,6 +211,8 @@ def main():
     ap.add_argument("--ckpt", help="SegFormer checkpoint (default config.SEGFORMER_CKPT)")
     ap.add_argument("--no-ocr", action="store_true", help="skip OCR of printed room areas (faster; changes only B/E)")
     ap.add_argument("--mask-cache", help="folder for SegFormer masks: reused if present, written otherwise")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="CPU processes for the vectorizer and metrics; recognition runs first (needs --mask-cache)")
     ap.add_argument("--plans-file", help="list of plan folders in split-file format, e.g. outputs/rq4/train_unseen.txt")
     ap.add_argument("--out", help="output folder (default outputs/evaluation)")
     ap.add_argument("--size", type=int, default=config.SEG_WORK_SIZE or 0,
@@ -208,6 +233,29 @@ def main():
             _m.append(load_model(a.ckpt) if a.ckpt else load_model())
         return _m[0]
     rows, failed = [], []
+    if a.workers > 1:
+        if not a.mask_cache:
+            sys.exit("--workers needs --mask-cache")
+        todo = [f for f in plans if a.all_floors or parse_svg(f / "model.svg")["n_floors"] == 1]
+        print(f"{len(todo)} plans to evaluate; recognition first", flush=True)
+        for i, folder in enumerate(todo):
+            try:
+                cache_mask(folder, model, a.size or None, a.tile or None, a.mask_cache, a.root)
+            except Exception as e:  # noqa: BLE001
+                failed.append(dict(plan=str(folder), error=repr(e), tb=traceback.format_exc(limit=2)))
+            if (i + 1) % 50 == 0:
+                print(f"  recognised {i + 1}/{len(todo)}", flush=True)
+        _m.clear()  # free the GPU model before the workers start
+        from multiprocessing import Pool
+        kw = dict(root=a.root, size=a.size or None, tile=a.tile or None, ocr=not a.no_ocr, mask_cache=a.mask_cache)
+        jobs = [(f, dict(kw, save_example=i < a.examples)) for i, f in enumerate(todo)]
+        with Pool(a.workers) as pool:
+            for i, (row, fail) in enumerate(pool.imap(_worker, jobs, chunksize=2)):
+                rows += [row] if row else []
+                failed += [fail] if fail else []
+                if (i + 1) % 50 == 0:
+                    print(f"  {i + 1}/{len(todo)} done, {len(rows)} evaluated, {len(failed)} failed", flush=True)
+        plans = []  # handled above
     for i, folder in enumerate(plans):
         try:
             if not a.all_floors and parse_svg(folder / "model.svg")["n_floors"] > 1:

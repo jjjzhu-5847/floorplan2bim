@@ -29,46 +29,56 @@
   --floor:#262d2a; --warn:#e38a58;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);padding:24px 16px 40px}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-header{display:flex;flex-direction:column;gap:6px}
-.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);padding:20px 24px 40px}
+.wrap{max-width:1840px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;justify-content:space-between}
+.picker{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.lbl{font:12.5px var(--mono);color:var(--muted)}
+#result{display:flex;flex-direction:column;gap:16px}
 h1{font:700 clamp(24px,3.4vw,34px)/1.1 var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
-.lede{color:var(--muted);max-width:72ch;margin:0}
 .note{font-size:12.5px;color:var(--warn);max-width:80ch;margin:0}
-.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.trio>*,.duo>*{min-width:0}
+.review{overflow-wrap:anywhere}
 .trio.solo{grid-template-columns:1fr}
-@media (max-width:1100px){.trio{grid-template-columns:1fr 1fr}.trio .stage{grid-column:1/-1}}
+@media (max-width:1100px){.trio{grid-template-columns:1fr 1fr}.trio .stage{grid-column:1/-1}.stage .frame{aspect-ratio:16/9}}
 @media (max-width:700px){.trio{grid-template-columns:1fr}}
-.panel{margin:0;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.panel .head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.panel img{width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
-.panel figcaption{font-size:12px;color:var(--muted)}
+.panel{margin:0;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.panel .head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;min-height:28px}
+.ctrls{display:flex;flex-wrap:wrap;gap:6px}
+.frame{position:relative;aspect-ratio:5/4;border:1px solid var(--line);border-radius:4px;background:#fff;overflow:hidden}
+.frame img{display:block;width:100%;height:100%;object-fit:contain}
 .seg.small button{font-size:11.5px;padding:4px 9px}
 .review{padding:10px 14px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;background:var(--panel)}
 .review b{font-weight:600}
 .review.low{border-color:#3d8c5a;background:color-mix(in srgb,#3d8c5a 10%,var(--panel))}
 .review.medium{border-color:#c28a1e;background:color-mix(in srgb,#c28a1e 12%,var(--panel))}
 .review.high{border-color:#b4541f;background:color-mix(in srgb,#b4541f 12%,var(--panel))}
-.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
 @media (max-width:860px){.duo{grid-template-columns:1fr}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px}
-.stage{position:relative;overflow:hidden}
-#view{display:block;width:100%;aspect-ratio:4/3;max-width:100%;touch-action:none}
+#view{display:block;width:100%;height:100%;touch-action:none}
 .labels{position:absolute;inset:0;pointer-events:none}
 .labels span{position:absolute;transform:translate(-50%,-50%);font:500 11px/1.2 var(--sans);color:var(--ink);
   background:color-mix(in srgb,var(--panel) 82%,transparent);padding:2px 6px;border-radius:4px;white-space:nowrap;text-align:center}
 .labels span b{display:block;font:500 10.5px/1.2 var(--mono);color:var(--muted)}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{font:500 12.5px var(--sans);background:transparent;color:var(--ink);border:0;padding:6px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
 .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.hint{margin-left:auto;font-size:12px;color:var(--muted)}
-.sect{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.hint{position:absolute;right:8px;bottom:6px;font-size:11.5px;color:var(--muted);pointer-events:none}
+.sect{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;min-width:0;overflow-x:auto}
+.sect h2 .src{text-align:right}
 h2{font:600 13px/1.2 var(--sans);margin:0;letter-spacing:.02em}
-h2 small{font-weight:400;color:var(--muted);margin-left:6px}
+.sect h2{min-height:28px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.src{font:400 11.5px var(--sans);color:var(--muted);letter-spacing:0}
+td.x{color:var(--muted);font:12px var(--mono);text-align:right;white-space:nowrap;padding-left:10px}
+input.rate{width:84px;font:12.5px var(--mono);text-align:right;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:4px;padding:3px 6px;margin:0 4px}
+input.rate:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+input.rate.edited{border-color:var(--accent);background:var(--accent-soft)}
+button.link{font:inherit;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 td,th{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
 th{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left}
@@ -76,51 +86,32 @@ td.n,th.n{text-align:right;font-family:var(--mono);font-size:13px}
 td.u{color:var(--muted);font:12px var(--mono);padding-left:6px;width:3.5em}
 tr.group td{padding-top:10px;font-weight:600;border-bottom:0;font-size:12px;color:var(--muted)}
 tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padding-top:8px}
-.foot{font-size:12px;color:var(--muted);margin:0}
-.bars{display:flex;flex-direction:column;gap:9px}
-.bar{display:grid;grid-template-columns:minmax(0,15em) 1fr 4.2em;gap:10px;align-items:center;font-size:13px}
-.track{height:10px;background:var(--floor);border-radius:3px;position:relative}
-.fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:0 4px 4px 0}
-.fill.hot{background:var(--warn)}
-.bar .v{font:500 13px var(--mono);text-align:right}
-@media (max-width:520px){.bar{grid-template-columns:1fr 4em}.bar .track{grid-column:1/-1;grid-row:2}}
-.pipeline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:500 12px var(--mono);color:var(--muted)}
-.pipeline span{padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
-.pipeline span.on{border-color:var(--accent);color:var(--accent)}
-.pipeline i{font-style:normal}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
-.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.picker .lbl{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.upload{font:500 12.5px var(--sans);border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:6px 12px;cursor:pointer}
+.upload{font:500 12.5px var(--sans);border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:7px 14px;cursor:pointer}
+.upload:hover{filter:brightness(1.08)}
 .upload input{display:none}
-.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px 16px}
-@media (max-width:640px){.strip{grid-template-columns:1fr}}
-.strip figure{margin:0;display:flex;flex-direction:column;gap:6px}
-.strip img{width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
-.strip figcaption{font-size:12px;color:var(--muted)}
+.empty{padding:28px 20px;color:var(--muted);font-size:14px;text-align:center}
+.empty p{margin:0}
+.empty code{font:12.5px var(--mono)}
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Floor plan → BIM → takeoff → cost</div>
     <h1>Plan-to-BIM Takeoff</h1>
-    <p class="lede">A floor plan image is segmented by a CV model, turned into walls, doors, windows and rooms, calibrated to metres from door widths, wall thicknesses and any printed room areas, and built into a 3D model. The system then measures quantities from the model and prices them.</p>
-    <p class="note" id="metaNote"></p>
+    <div class="picker">
+      <span class="lbl" id="planName"></span>
+      <label class="upload" id="uploadBox"><input type="file" id="upload" accept="image/png,image/jpeg"><span id="uploadTxt">Upload a floor plan image</span></label>
+    </div>
   </header>
 
-  <div class="picker" role="group" aria-label="Choose a plan">
-    <span class="lbl">Plan</span>
-    <div class="seg" id="planSeg"></div>
-    <label class="upload" id="uploadBox" hidden><input type="file" id="upload" accept="image/png,image/jpeg"><span id="uploadTxt">Upload a floor plan image</span></label>
-  </div>
+  <div class="card empty" id="empty"><p id="emptyTxt">Upload a floor plan image to start.</p></div>
 
+  <div id="result" hidden>
   <div class="review" id="review" role="status" hidden></div>
 
   <div class="trio" id="trio">
     <figure class="card panel" id="pIn">
       <div class="head"><h2>Plan image</h2></div>
-      <img id="imIn" alt="Floor plan image">
-      <figcaption id="inNote"></figcaption>
+      <div class="frame"><img id="imIn" alt="Floor plan image"></div>
     </figure>
     <figure class="card panel" id="pRec">
       <div class="head"><h2>Recognition</h2>
@@ -128,109 +119,97 @@ tr.total td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padd
           <button data-k="seg" aria-pressed="true">Pixels</button><button data-k="elements" aria-pressed="false">Elements</button><button data-k="gt" aria-pressed="false" id="btnGt">Ground truth</button>
         </div>
       </div>
-      <img id="imRec" alt="What the model recognised">
-      <figcaption id="recNote"></figcaption>
+      <div class="frame"><img id="imRec" alt="What the model recognised"></div>
     </figure>
-    <div class="card stage">
-      <canvas id="view" aria-label="3D model of the selected floor plan"></canvas>
-      <div class="labels" id="labels"></div>
-      <div class="toolbar">
-        <div class="seg" role="group" aria-label="Camera">
-          <button id="cam3d" aria-pressed="true">3D</button>
-          <button id="camTop" aria-pressed="false">Top view</button>
+    <figure class="card panel stage">
+      <div class="head"><h2>3D model</h2>
+        <div class="ctrls">
+          <div class="seg small" role="group" aria-label="Camera">
+            <button id="cam3d" aria-pressed="true">3D</button><button id="camTop" aria-pressed="false">Top</button>
+          </div>
+          <div class="seg small" role="group" aria-label="Wall height">
+            <button id="wFull" aria-pressed="true">Full</button><button id="wCut" aria-pressed="false">Cutaway</button>
+          </div>
         </div>
-        <div class="seg" role="group" aria-label="Wall height">
-          <button id="wFull" aria-pressed="true">Full walls</button>
-          <button id="wCut" aria-pressed="false">Cutaway 1.2 m</button>
-        </div>
+      </div>
+      <div class="frame">
+        <canvas id="view" aria-label="3D model of the uploaded floor plan"></canvas>
+        <div class="labels" id="labels"></div>
         <span class="hint">Drag to orbit · scroll to zoom</span>
       </div>
-    </div>
+    </figure>
   </div>
 
   <div class="duo">
     <div class="card sect">
-      <h2>Quantity takeoff <small id="qtoSub">from the model</small></h2>
+      <h2>Quantity takeoff</h2>
       <table id="qto"></table>
-      <p class="foot">Wall height 2.7 m, door 2.1 m, window 0.9–2.1 m (assumed). Wall length is footprint ÷ thickness, so corners are counted once.</p>
     </div>
     <div class="card sect">
-      <h2>Cost <small>walls, floors and openings only</small></h2>
+      <h2>Cost <span class="src" id="rateSrc"></span></h2>
       <table id="cost"></table>
-      <p class="foot">Placeholder unit rates (USD): exterior wall 180/m², partition 75/m², floor finish 60/m², interior door 450, entrance door 1,200, window 550/m².</p>
     </div>
   </div>
-
-  <div class="card sect" id="errCard">
-    <h2>What moves the estimate <small>mean absolute error in total cost, 500 simulated runs each (test plan)</small></h2>
-    <div class="bars" id="bars"></div>
-    <p class="foot">Ground-truth geometry of the test plan is damaged the way a CV model typically fails, and the cost is recomputed. Scale calibration from door widths is the largest source of error: the 95th-percentile run overestimates cost by <span id="p95"></span>. The full project measures this on real plans against CubiCasa's annotated SVGs.</p>
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const PAGE = __DATA__;
 const fmt = (v, d=1) => Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-let plan = PAGE.plans[0];
+let plan = null;
+let rates = null;  // unit rates typed by the user; null = the defaults sent with each plan
+const curRates = () => rates || plan.unit_rates || {};
 
-// ---------- plan picker
-function renderPicker(sel){
-  $('planSeg').innerHTML = PAGE.plans.map((p,i) => `<button data-i="${i}" aria-pressed="${i===sel}">${p.name}</button>`).join('');
-}
-renderPicker(0);
-$('planSeg').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  [...$('planSeg').children].forEach(x => x.setAttribute('aria-pressed', x === b));
-  plan = PAGE.plans[+b.dataset.i]; renderPlan();
+// ---------- upload: each new plan replaces the previous one
+$('upload').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('uploadTxt').textContent = 'Processing ' + f.name + '…';
+  const fd = new FormData(); fd.append('file', f);
+  try {
+    const r = await fetch('/api/plan', {method:'POST', body:fd});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.statusText);
+    plan = d; $('planName').textContent = f.name;
+    $('empty').hidden = true; $('result').hidden = false; renderPlan();
+  } catch (err) {
+    plan = null; $('planName').textContent = '';
+    $('result').hidden = true; $('empty').hidden = false;
+    $('emptyTxt').textContent = 'Could not process ' + f.name + ': ' + err.message;
+  }
+  $('uploadTxt').textContent = 'Upload a floor plan image';
+  e.target.value = '';
 });
-$('metaNote').textContent = PAGE.meta && PAGE.meta.note ? PAGE.meta.note : '';
-if (window.LIVE_API){
-  $('uploadBox').hidden = false;
-  $('upload').addEventListener('change', async e => {
-    const f = e.target.files[0]; if (!f) return;
-    $('uploadTxt').textContent = 'Processing ' + f.name + '…';
-    const fd = new FormData(); fd.append('file', f);
-    try {
-      const r = await fetch('/api/plan', {method:'POST', body:fd});
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || r.statusText);
-      PAGE.plans.push(d); plan = d; renderPicker(PAGE.plans.length - 1); renderPlan();
-      $('uploadTxt').textContent = 'Upload another floor plan';
-    } catch (err) { $('uploadTxt').textContent = 'Could not process this image: ' + err.message; }
-    e.target.value = '';
-  });
-}
 
 // ---------- plan image | recognition views
 let recKind = 'seg';
 function renderImages(){
-  const im = plan.images, n = plan.notes || {};
+  const im = plan.images;
   $('pIn').hidden = $('pRec').hidden = !im;
   $('trio').classList.toggle('solo', !im);
   if (!im) return;
   if (!im[recKind]) recKind = 'seg';
   $('btnGt').hidden = !im.gt;
   [...$('recSeg').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === recKind));
-  $('imIn').src = im.input; $('inNote').textContent = n.input || '';
-  $('imRec').src = im[recKind]; $('recNote').textContent = n[recKind] || '';
+  $('imIn').src = im.input;
+  $('imRec').src = im[recKind];
 }
 $('recSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ recKind = b.dataset.k; renderImages(); } });
 
-// ---------- review hint (RQ4 error model)
+// ---------- cost range (RQ4 interval model)
 function renderReview(){
   const r = plan.review, el = $('review');
-  el.hidden = !r;
-  if (!r) return;
-  const e = Math.round(r.expected_abs_error_pct);
-  const msg = {low: `<b>Low risk.</b> The takeoff and cost can be used as computed (expected cost error about ±${e}%).`,
-               medium: `<b>Medium risk.</b> Spot-check the scale and the interior walls before relying on the numbers (expected cost error about ±${e}%).`,
-               high: `<b>High risk — have an estimator check this plan.</b> The run-time signals look like plans whose automatic estimate was far off (expected cost error about ±${e}%).`};
-  el.className = 'review ' + r.level;
-  el.innerHTML = msg[r.level];
+  el.hidden = !(r && r.low_pct != null);
+  if (el.hidden) return;
+  const pct = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)) + '%';
+  const total = costTotal();
+  el.className = 'review ' + (r.review ? 'high' : r.aace_class <= 3 ? 'low' : 'medium');
+  el.innerHTML = `<b>Likely actual cost (${r.coverage_pct}% range): ${fmt(total * (1 + r.low_pct / 100),0)} – ${fmt(total * (1 + r.high_pct / 100),0)} USD</b> ` +
+    `(${pct(r.low_pct)} / ${pct(r.high_pct)}) · ` +
+    (r.review ? '<b>wider than AACE Class 5 — have an estimator check this plan</b>' : `AACE Class ${r.aace_class}`);
 }
 
 function renderTables(){
@@ -241,26 +220,52 @@ function renderTables(){
     ['Openings'], ['Entrance doors', Q.doors_entry, 'ea', 0], ['Interior doors', Q.doors_interior, 'ea', 0], ['Windows', Q.windows, 'ea', 0], ['Window area', Q.window_area_m2, 'm²'],
     ['Floors'], ['Net floor area', Q.floor_area_m2, 'm²'],
   ];
-  $('qto').innerHTML = rows.map(r => r.length === 1 ? `<tr class="group"><td colspan="3">${r[0]}</td></tr>`
+  $('qto').innerHTML = `<tr><th>Item</th><th class="n">Quantity</th><th></th></tr>` + rows.map(r => r.length === 1 ? `<tr class="group"><td colspan="3">${r[0]}</td></tr>`
     : `<tr><td>${r[0]}</td><td class="n">${r[1] == null ? '–' : fmt(r[1], r[3] ?? 1)}</td><td class="u">${r[2]}</td></tr>`).join('');
-  $('qtoSub').textContent = plan.real ? 'first pass from CV output' : 'from the model';
-  $('cost').innerHTML = `<tr><th>Item</th><th class="n">USD</th></tr>` +
-    Object.entries(C).filter(([k]) => k !== 'TOTAL').map(([k,v]) => `<tr><td>${k}</td><td class="n">${fmt(v,0)}</td></tr>`).join('') +
-    `<tr class="total"><td>Total (partial scope)</td><td class="n">${fmt(C.TOTAL,0)}</td></tr>`;
+  const R = curRates();
+  $('cost').innerHTML = `<tr><th>Item</th><th class="n">Quantity</th><th class="n">Unit rate (USD)</th><th class="n">USD</th></tr>` +
+    COST_ITEMS.map(([label, q, u, rk]) => `<tr><td>${label}</td>` +
+      `<td class="x">${fmt(Q[q], u === 'ea' ? 0 : 1)} ${u}</td>` +
+      `<td class="x">×<input class="rate" type="number" min="0" step="any" data-k="${rk}" value="${R[rk] ?? ''}" aria-label="${label} unit rate">/${u}</td>` +
+      `<td class="n" data-cost="${rk}"></td></tr>`).join('') +
+    `<tr class="total"><td colspan="3">Total (partial scope)</td><td class="n" id="costTotal"></td></tr>`;
+  updateCosts();
   renderImages();
 }
 
-// ---------- error bars (plan independent)
-const E = PAGE.err;
-$('errCard').hidden = !E;
-if (E) {
-const bars = [
-  ['Miss 10% of interior walls', E['miss 10% interior walls'].mae], ['Miss 10% of windows', E['miss 10% windows'].mae],
-  ['Miss 10% of doors', E['miss 10% doors'].mae], ['Scale from door widths', E['scale from door widths (0.8/0.9/1.0 mix)'].mae, true]];
-const bmax = Math.max(...bars.map(b => b[1])) * 1.1;
-$('bars').innerHTML = bars.map(([l,v,hot]) => `<div class="bar"><span>${l}</span><div class="track"><div class="fill${hot?' hot':''}" style="width:${v/bmax*100}%"></div></div><span class="v">${v.toFixed(1)}%</span></div>`).join('');
-$('p95').textContent = '+' + E['scale from door widths (0.8/0.9/1.0 mix)'].p95.toFixed(0) + '%';
+// ---------- cost = quantity x unit rate; the rates can be edited
+const COST_ITEMS = [  // [label, quantity key, unit, rate key]
+  ['Exterior walls', 'ext_wall_net_area_m2', 'm²', 'ext_wall_m2'],
+  ['Interior partitions', 'int_wall_net_area_m2', 'm²', 'int_wall_m2'],
+  ['Floor finish', 'floor_area_m2', 'm²', 'floor_m2'],
+  ['Interior doors', 'doors_interior', 'ea', 'door_int_ea'],
+  ['Entrance doors', 'doors_entry', 'ea', 'door_entry_ea'],
+  ['Windows', 'window_area_m2', 'm²', 'window_m2'],
+];
+const costTotal = () => COST_ITEMS.reduce((t, [, q, , rk]) => t + (plan.quantities[q] || 0) * (curRates()[rk] || 0), 0);
+function updateCosts(){
+  const R = curRates(), D = plan.unit_rates || {};
+  for (const [, q, , rk] of COST_ITEMS){
+    document.querySelector(`[data-cost="${rk}"]`).textContent = fmt((plan.quantities[q] || 0) * (R[rk] || 0), 0);
+    document.querySelector(`input.rate[data-k="${rk}"]`).classList.toggle('edited', R[rk] !== D[rk]);
+  }
+  $('costTotal').textContent = fmt(costTotal(), 0);
+  const edited = COST_ITEMS.some(([, , , rk]) => R[rk] !== D[rk]);
+  $('rateSrc').innerHTML = edited ? 'unit rates edited · <button class="link" id="rateReset">reset</button>'
+    : (plan.unit_rate_source ? 'unit rates: ' + plan.unit_rate_source : '');
+  renderReview();
 }
+$('cost').addEventListener('input', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  const v = parseFloat(e.target.value);
+  if (!(v >= 0)) return;
+  rates = {...curRates(), [k]: v};
+  updateCosts();
+});
+$('rateSrc').addEventListener('click', e => {
+  if (e.target.id !== 'rateReset') return;
+  rates = null; renderTables();
+});
 
 // ---------- 3D
 const canvas = $('view'), labelsEl = $('labels');
@@ -307,13 +312,13 @@ if (window.THREE && THREE.OrbitControls) {
         g.position.set(x, z0 + (top-z0)/2, y); g.rotation.y = -ang; group.add(g);
       }
     }
-    labelsEl.innerHTML = D.rooms.filter(r => r.area >= 1.5).map(r => `<span data-c="${r.c}">${r.type.replace('LivingRoom','Living room')}<b>${r.area.toFixed(1)} m²</b></span>`).join('');
+    labelsEl.innerHTML = D.rooms.filter(r => r.area >= 3).map(r => `<span data-c="${r.c}">${r.type && r.type !== 'Room' ? r.type.replace('LivingRoom','Living room') + ' ' : ''}${r.area.toFixed(1)} m²</span>`).join('');
     labelNodes = [...labelsEl.children].map(n => [n, n.dataset.c.split(',').map(Number)]);
   }
   function setCam(mode){
     controls.target.set(cx, .8, cz);
-    if (mode === 'top') camera.position.set(cx, span * 1.9, cz + .001);
-    else camera.position.set(cx - span * .75, span * 1.2, cz + span * 1.4);
+    if (mode === 'top') camera.position.set(cx, span * 1.7, cz + .001);
+    else camera.position.set(cx - span * .7, span * 1.1, cz + span * 1.3);
     sun.position.set(cx - 6, 12, cz + 9); controls.update();
     $('cam3d').setAttribute('aria-pressed', mode !== 'top'); $('camTop').setAttribute('aria-pressed', mode === 'top');
   }
@@ -329,7 +334,7 @@ if (window.THREE && THREE.OrbitControls) {
     for (const [n, c] of labelNodes){ v.set(c[0], .05, c[1]).project(camera); n.style.left = ((v.x+1)/2*w)+'px'; n.style.top = ((1-v.y)/2*h)+'px'; }
     requestAnimationFrame(frame);
   })();
-  const retheme = () => build();
+  const retheme = () => { if (plan) build(); };
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', retheme);
   new MutationObserver(retheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
 } else {
@@ -337,5 +342,4 @@ if (window.THREE && THREE.OrbitControls) {
 }
 
 function renderPlan(){ renderTables(); renderReview(); rebuild3D(); }
-renderPlan();
 </script>

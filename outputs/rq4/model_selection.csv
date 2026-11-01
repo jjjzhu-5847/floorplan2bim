@@ -1,0 +1,8 @@
+stage,model,cv_spearman,coverage_pct,mean_width,median_width,interval_score,class_1_or_better_pct,class_2_or_better_pct,class_3_or_better_pct,class_4_or_better_pct,class_5_or_better_pct,wider_than_class_5_pct
+risk score,ridge,0.16795897961337397,,,,,,,,,,
+risk score,random_forest,0.23114119010901335,,,,,,,,,,
+risk score,gradient_boosting,0.22225001457749602,,,,,,,,,,
+risk score,rule: rt_scale_spread,-0.015177535388484096,,,,,,,,,,
+interval,constant,,80.10471204188482,45.198528585755874,45.24118670172751,79.32600631227268,0.0,0.0,0.0,0.0,100.0,0.0
+interval,levels,,78.7434554973822,46.542988891677986,40.35194075973022,77.56256407075982,0.0,0.0,0.0,38.53403141361256,100.0,0.0
+interval,quantile,,81.2565445026178,43.64896658950661,39.05899313823329,66.00614464476205,0.0,0.0,3.1413612565445024,37.59162303664921,85.34031413612566,14.659685863874344

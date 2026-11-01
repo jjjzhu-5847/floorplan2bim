@@ -252,27 +252,21 @@ def vectorize_mask(mask, door_gap=config.VEC_DOOR_GAP_PX, room_mode=config.VEC_R
             res.append((closed[ys, xs], open_px[ys, xs] == 1, lab[ys, xs]))
         return res
 
-    def ends_joined(W, walls):
-        """How many of the wall's two ends touch another wall."""
-        n = 0
-        for e in (W["a"], W["b"]):
-            pt = shapely.Point((e, W["c"]) if W["horiz"] else (W["c"], e))
-            n += any(V is not W and V["poly"].distance(pt) <= W["t"] / 2 + 3 * u for V in walls)
-        return n
-
     room, lab, spaces, open_px = rooms(walls)
+    ts = np.sort([W["t"] for W in walls])
+    t_thin = float(np.median(ts[: max(len(ts) // 2, 1)])) if len(ts) else 0.0  # typical interior wall
     keep = []
     for W in walls:
         (c1, o1, l1), (c2, o2, l2) = sides(W, room, lab, open_px)
         # railings: no closed room on either face and an open space on one
         if np.mean(c1 | c2) < 0.3 and np.mean(o1 | o2) > 0.3:
             continue
-        # separates nothing: the same room on both faces (furniture, counters, fixtures). A real wall with a
-        # small gap at one end looks the same, so only walls free at both ends, or short and free at one end
-        if config.VEC_DROP_NONSEPARATING and np.mean((l1 == l2) & (l1 > 0)) >= 0.8:
-            joined = ends_joined(W, walls)
-            if joined == 0 or (joined == 1 and W["b"] - W["a"] < 15 * W["t"]):
-                continue
+        # separates nothing (the same room on both faces) and much thinner than an interior wall: a furniture,
+        # counter or fixture line. Thickness is the guard - a real wall with a small gap at one end also has the
+        # same room on both faces, but it is as thick as the other interior walls
+        if (config.VEC_DROP_NONSEPARATING and W["t"] < 0.6 * t_thin
+                and np.mean((l1 == l2) & (l1 > 0)) >= 0.8):
+            continue
         keep.append(W)
     if len(keep) < len(walls):
         walls = keep
