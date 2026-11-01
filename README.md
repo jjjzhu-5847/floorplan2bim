@@ -233,7 +233,14 @@ python evaluation/compare_models.py outputs/evaluation_val_dev_sep3 outputs/eval
 python evaluation/test_results.py outputs/evaluation_baseline outputs/evaluation     # the test table above
 python evaluation/error_model.py --train outputs/rq4/eval_train_heldout --test outputs/evaluation   # part 2
 python evaluation/recost.py outputs/evaluation --sensitivity       # unit rates ±30%; --write reprices a run in place
+
+# continue training from our model (needs CubiCasa5K and an NVIDIA GPU; ours: RTX 4070 Super, ~9 min per epoch)
+python recognition/train_segformer.py native-prepare        # training crops -> data/seg_cache/ (~12 GB disk, ~10 min)
+python recognition/train_segformer.py native-train models/segformer_native_b2.pt my_model   # -> models/my_model.pt
 ```
+Continuing starts from our weights, but the optimizer state is not saved, so it is a new fine-tuning run (12 epochs,
+fresh learning-rate schedule), not an exact resume. To use a new model, point `config.SEGFORMER_CKPT` to it and
+recalibrate the scale on the validation split (`evaluation/calibrate_scale.py`), as in PROJECT_PLAN section 5.
 Quick check after changing code: `python scripts/run_pipeline.py --svg samples/sample_plan/model.svg --name sample
 --px-per-m 100` must give exterior walls 36.00 m, floor area 72.79 m², window area 13.56 m².
 

@@ -1,4 +1,4 @@
-# Python 3.10-3.12
+# Python 3.11-3.13 (developed on 3.13.1)
 numpy
 pandas
 scipy
@@ -8,9 +8,12 @@ scikit-image
 shapely>=2.0
 ifcopenshell>=0.8
 matplotlib
-scikit-learn     # RQ4 error model (evaluation/error_model.py)
-transformers>=5.22   # the checkpoint uses the newer SegFormer parameter names (segformer.stages.*)
-flask            # only for web/app.py (live demo)
+scikit-learn==1.8.*   # models/error_model.joblib (cost ranges) was saved with 1.8.0; other versions may not load it
+joblib
+rapidocr-onnxruntime  # OCR of printed room areas (recognition/ocr.py), used on every plan
+transformers>=5.22    # the checkpoint uses the newer SegFormer parameter names (segformer.stages.*)
+flask                 # the website (web/app.py)
 # PyTorch: install the CUDA build for your GPU first, e.g. for an RTX 4070 Super:
 #   pip install torch --index-url https://download.pytorch.org/whl/cu124
+# (CPU-only also works for the website: about 5-10 s per plan on a laptop CPU)
 torch
