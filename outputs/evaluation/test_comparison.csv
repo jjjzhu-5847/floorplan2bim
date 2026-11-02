@@ -30,7 +30,18 @@ E window_area_m2 median err %,-15.236815330335718,-0.8472795540431233
 E doors_interior median err %,-75.0,16.666666666666675
 E doors_entry median err %,0.0,0.0
 E windows median err %,16.666666666666675,0.0
+E ext_wall_length_m median |err| %,20.96079630855705,17.07742903982419
+E int_wall_length_m median |err| %,57.94833318743704,24.9264010849298
+E floor_area_m2 median |err| %,59.88500337400091,14.866912963089218
+E window_area_m2 median |err| %,27.557957800851785,19.902508159430887
+E doors_interior median |err| %,75.0,27.922077922077918
+E doors_entry median |err| %,50.0,50.0
+E windows median |err| %,33.33333333333333,22.22222222222222
 "E net |err| %, all plans",36.623013874898746,12.395319161281732
 "E net |err| %, multi-storey",51.08179273308791,11.23084717694538
 vectorization only (C): wall precision,,1.0
 vectorization only (C): wall recall,,0.9821949604168974
+same plans as first run: plans,,281.0
+same plans as first run: E net |err| %,,12.578270029146154
+same plans as first run: E gross %,,22.69469348084277
+same plans as first run: E within 20% (share %),,71.53024911032028
